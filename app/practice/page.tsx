@@ -7,7 +7,7 @@ import { generateQuestion, TOPICS, TOPIC_CATEGORIES, type Topic, type Question, 
 
 const CATEGORY_ORDER: Category[] = ['numbers', 'fractions', 'measurement-geometry', 'problem-solving'];
 
-interface Student { id: number; name: string; }
+interface AuthUser { studentId: number; name: string; }
 interface BadgeResult { badge: string; isNew: boolean; isUpgrade: boolean; previousBadge: string | null; }
 
 const BADGE_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', perfect: '👑' };
@@ -26,10 +26,7 @@ function PracticeApp() {
   const topicParam = searchParams.get('topic') as Topic | null;
 
   const [phase, setPhase] = useState<Phase>('setup');
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedStudent, setSelectedStudent] = useState<number | null>(null);
-  const [selectedStudentName, setSelectedStudentName] = useState<string>('');
-  const [newName, setNewName] = useState('');
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [selectedTopic, setSelectedTopic] = useState<Topic>(topicParam ?? 'addition');
 
   const [question, setQuestion] = useState<Question | null>(null);
@@ -41,41 +38,12 @@ function PracticeApp() {
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [earnedBadge, setEarnedBadge] = useState<BadgeResult | null>(null);
 
-  // floating +2 / -2 flash
   const [flash, setFlash] = useState<{ val: string; key: number } | null>(null);
   const flashKey = useRef(0);
 
   useEffect(() => {
-    fetch('/api/students').then(r => r.json()).then(setStudents);
-    // restore student from localStorage
-    const id = localStorage.getItem('mathapp_student_id');
-    const name = localStorage.getItem('mathapp_student_name');
-    if (id && name) {
-      setSelectedStudent(parseInt(id));
-      setSelectedStudentName(name);
-    }
+    fetch('/api/auth/me').then(r => r.json()).then(d => setUser(d.user ?? null));
   }, []);
-
-  const addStudent = async () => {
-    if (!newName.trim()) return;
-    const res = await fetch('/api/students', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: newName }),
-    });
-    const s = await res.json();
-    setStudents(prev => [...prev, s]);
-    selectStudent(s.id, s.name);
-    setNewName('');
-  };
-
-  const selectStudent = (id: number, name: string) => {
-    setSelectedStudent(id);
-    setSelectedStudentName(name);
-    localStorage.setItem('mathapp_student_id', id.toString());
-    localStorage.setItem('mathapp_student_name', name);
-    window.dispatchEvent(new Event('mathapp_student_changed'));
-  };
 
   const nextQuestion = useCallback(() => {
     setQuestion(generateQuestion(selectedTopic));
@@ -108,17 +76,16 @@ function PracticeApp() {
     setCorrectCount(newCorrect);
     setPoints(newPoints);
 
-    // floating flash
     flashKey.current++;
     setFlash({ val: correct ? `+${POINTS_CORRECT}` : `-${POINTS_WRONG}`, key: flashKey.current });
     setTimeout(() => setFlash(null), 700);
 
-    if (selectedStudent) {
+    if (user) {
       fetch('/api/answers', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          studentId: selectedStudent,
+          studentId: user.studentId,
           topic: selectedTopic,
           question: question.question,
           correctAnswer: question.answer,
@@ -130,21 +97,20 @@ function PracticeApp() {
 
     setTimeout(async () => {
       if (newPoints >= TARGET_POINTS) {
-        // award badge
-        if (selectedStudent) {
+        if (user) {
           try {
             const res = await fetch('/api/sessions/complete', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                studentId: selectedStudent,
+                studentId: user.studentId,
                 topic: selectedTopic,
                 correct: newCorrect,
                 total: newTotal,
               }),
             });
             setEarnedBadge(await res.json());
-          } catch { /* badge award silent fail */ }
+          } catch { /* silent */ }
         }
         setPhase('result');
       } else {
@@ -155,46 +121,24 @@ function PracticeApp() {
 
   const topicInfo = TOPICS.find(t => t.id === selectedTopic)!;
 
-  /* ── SETUP PHASE ── */
+  /* ── SETUP ── */
   if (phase === 'setup') {
     return (
       <div className="max-w-xl mx-auto">
-        <h1 className="font-black text-3xl text-[#1a1a1a] mb-6 tracking-wide">🎯 SET UP PRACTICE</h1>
-
-        {/* Student selector */}
-        <div className="card-comic bg-white rounded-2xl p-5 mb-5">
-          <h2 className="font-black text-sm tracking-[0.15em] mb-3">WHO IS PRACTICING?</h2>
-          <div className="flex flex-wrap gap-2 mb-4">
-            {students.map(s => (
-              <button key={s.id}
-                onClick={() => selectStudent(s.id, s.name)}
-                className={`px-4 py-2 rounded-xl font-black text-sm transition card-comic-sm ${
-                  selectedStudent === s.id
-                    ? 'bg-[#FFD015] text-[#1a1a1a] border-[#1a1a1a]'
-                    : 'bg-white text-[#1a1a1a] hover:bg-yellow-50'
-                }`}>
-                {s.name}
-              </button>
-            ))}
+        {/* Greeting */}
+        {user && (
+          <div className="card-comic bg-[#4A6CF7] text-white rounded-2xl px-5 py-3 mb-5 flex items-center gap-3">
+            <div className="text-2xl">👋</div>
+            <div>
+              <span className="font-black">Hey {user.name}!</span>
+              <span className="text-blue-200 font-semibold text-sm ml-2">Ready to practice?</span>
+            </div>
           </div>
-          <div className="flex gap-2">
-            <input
-              className="card-comic-sm border-[#1a1a1a] rounded-xl px-3 py-2 flex-1 font-semibold focus:outline-none focus:ring-2 focus:ring-yellow-400"
-              placeholder="Add new name..."
-              value={newName}
-              onChange={e => setNewName(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && addStudent()}
-            />
-            <button onClick={addStudent}
-              className="card-comic-sm bg-[#FFD015] text-[#1a1a1a] font-black px-4 py-2 rounded-xl hover:bg-yellow-300 transition">
-              + Add
-            </button>
-          </div>
-        </div>
+        )}
 
-        {/* Topic selector — grouped by category */}
+        <h1 className="font-black text-3xl text-[#1a1a1a] mb-5 tracking-wide">🎯 CHOOSE A TOPIC</h1>
+
         <div className="card-comic bg-white rounded-2xl p-5 mb-5">
-          <h2 className="font-black text-sm tracking-[0.15em] mb-4">CHOOSE A TOPIC</h2>
           <div className="space-y-4">
             {CATEGORY_ORDER.map(cat => {
               const catTopics = TOPICS.filter(t => t.category === cat);
@@ -221,47 +165,35 @@ function PracticeApp() {
           </div>
         </div>
 
-        {/* Points info */}
         <div className="card-comic-sm bg-blue-50 border-blue-300 rounded-2xl p-4 mb-5 text-sm font-semibold text-blue-700">
-          🎮 Score <strong>100 points</strong> to complete a topic &nbsp;·&nbsp;
-          ✅ Correct = <strong>+{POINTS_CORRECT} pts</strong> &nbsp;·&nbsp;
-          ❌ Wrong = <strong>−{POINTS_WRONG} pts</strong>
+          🎮 Reach <strong>100 points</strong> to complete · ✅ Correct <strong>+{POINTS_CORRECT} pts</strong> · ❌ Wrong <strong>−{POINTS_WRONG} pts</strong>
         </div>
 
-        <button onClick={startGame} disabled={!selectedStudent}
-          className={`w-full font-black py-4 rounded-2xl text-lg transition card-comic ${
-            selectedStudent
-              ? 'bg-[#FFD015] text-[#1a1a1a] hover:bg-yellow-300'
-              : 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none border-gray-300'
-          }`}>
-          {selectedStudent ? '▶ START PRACTICE' : 'Select your name first'}
+        <button onClick={startGame}
+          className="card-comic w-full bg-[#FFD015] text-[#1a1a1a] font-black py-4 rounded-2xl text-lg hover:bg-yellow-300 transition">
+          ▶ START PRACTICE
         </button>
       </div>
     );
   }
 
-  /* ── RESULT PHASE ── */
+  /* ── RESULT ── */
   if (phase === 'result') {
     const accuracy = totalAnswered ? Math.round((correctCount / totalAnswered) * 100) : 0;
     return (
       <div className="max-w-md mx-auto text-center">
-
-        {/* Badge celebration */}
         {earnedBadge && (earnedBadge.isNew || earnedBadge.isUpgrade) && (
           <div className={`card-comic rounded-2xl mb-4 p-5 animate-pop ${
             earnedBadge.badge === 'perfect' ? 'bg-purple-100 border-purple-500' :
             earnedBadge.badge === 'gold' ? 'bg-yellow-100 border-yellow-500' :
-            earnedBadge.badge === 'silver' ? 'bg-gray-100 border-gray-400' :
-            'bg-amber-100 border-amber-500'
+            earnedBadge.badge === 'silver' ? 'bg-gray-100 border-gray-400' : 'bg-amber-100 border-amber-500'
           }`}>
             <div className="text-6xl mb-1">{BADGE_EMOJI[earnedBadge.badge]}</div>
             <div className="font-black text-xl">
               {earnedBadge.isNew ? '🎉 NEW BADGE EARNED!' : '⬆️ BADGE UPGRADED!'}
             </div>
             <div className="font-semibold text-gray-600 mt-1">
-              {earnedBadge.isUpgrade && earnedBadge.previousBadge
-                ? `${BADGE_EMOJI[earnedBadge.previousBadge]} → ${BADGE_EMOJI[earnedBadge.badge]} `
-                : ''}
+              {earnedBadge.isUpgrade && earnedBadge.previousBadge ? `${BADGE_EMOJI[earnedBadge.previousBadge]} → ${BADGE_EMOJI[earnedBadge.badge]} ` : ''}
               {BADGE_LABEL[earnedBadge.badge]} · {topicInfo.emoji} {topicInfo.label}
             </div>
           </div>
@@ -294,12 +226,11 @@ function PracticeApp() {
               className="card-comic-sm bg-[#FFD015] text-[#1a1a1a] font-black py-3 px-5 rounded-xl hover:bg-yellow-300 transition">
               🔄 Try Again
             </button>
-            <Link href="/practice"
-              className="card-comic-sm bg-white text-[#1a1a1a] font-black py-3 px-5 rounded-xl hover:bg-gray-50 transition">
+            <Link href="/practice" className="card-comic-sm bg-white text-[#1a1a1a] font-black py-3 px-5 rounded-xl hover:bg-gray-50 transition">
               Change Topic
             </Link>
-            {selectedStudent && (
-              <Link href={`/student/${selectedStudent}`}
+            {user && (
+              <Link href={`/student/${user.studentId}`}
                 className="card-comic-sm bg-[#4A6CF7] text-white font-black py-3 px-5 rounded-xl hover:opacity-90 transition">
                 My Profile 🏅
               </Link>
@@ -310,13 +241,11 @@ function PracticeApp() {
     );
   }
 
-  /* ── PLAYING PHASE ── */
+  /* ── PLAYING ── */
   const progressPct = Math.min(100, (points / TARGET_POINTS) * 100);
 
   return (
     <div className="max-w-xl mx-auto relative">
-
-      {/* floating +2 / -2 */}
       {flash && (
         <div key={flash.key}
           className={`absolute top-0 right-0 font-black text-3xl pointer-events-none animate-flash z-10 ${
@@ -326,7 +255,6 @@ function PracticeApp() {
         </div>
       )}
 
-      {/* Header */}
       <div className="flex items-center justify-between mb-4">
         <button onClick={() => setPhase('setup')}
           className="card-comic-sm bg-white font-black text-sm px-3 py-1.5 rounded-lg hover:bg-gray-50 transition">
@@ -335,31 +263,23 @@ function PracticeApp() {
         <span className={`card-comic-sm px-3 py-1 rounded-full font-black text-sm ${topicInfo.color}`}>
           {topicInfo.emoji} {topicInfo.label}
         </span>
-        <span className="font-black text-sm text-gray-500">
-          ✅ {correctCount} ❌ {totalAnswered - correctCount}
-        </span>
+        <span className="font-black text-sm text-gray-500">✅ {correctCount} ❌ {totalAnswered - correctCount}</span>
       </div>
 
-      {/* Points progress */}
       <div className="card-comic bg-white rounded-2xl p-4 mb-5">
         <div className="flex justify-between items-baseline mb-2">
           <span className="font-black text-4xl text-[#1a1a1a]">{points}</span>
           <span className="font-bold text-gray-400">/ {TARGET_POINTS} pts</span>
         </div>
         <div className="h-4 bg-gray-100 rounded-full border-2 border-[#1a1a1a] overflow-hidden">
-          <div
-            className="h-full bg-[#FFD015] rounded-full transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
+          <div className="h-full bg-[#FFD015] rounded-full transition-all duration-500" style={{ width: `${progressPct}%` }} />
         </div>
         <div className="mt-1 text-right text-xs font-bold text-gray-400">{Math.round(progressPct)}% to goal</div>
       </div>
 
-      {/* Question card */}
       {question && (
         <div className="card-comic bg-white rounded-2xl p-7 mb-4">
           <p className="font-black text-2xl text-center text-[#1a1a1a] mb-8 leading-snug">{question.question}</p>
-
           <div className="grid grid-cols-2 gap-3">
             {question.choices.map(c => {
               let cls = 'card-comic-sm border-[#1a1a1a] bg-white hover:bg-yellow-50 hover:border-yellow-400';
@@ -376,7 +296,6 @@ function PracticeApp() {
               );
             })}
           </div>
-
           {chosen && (
             <div className={`mt-5 text-center font-black text-lg ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
               {isCorrect ? '✅ Correct! Great job!' : `❌ Answer: ${question.answer}`}
@@ -385,7 +304,6 @@ function PracticeApp() {
         </div>
       )}
 
-      {/* Motivational nudge */}
       {points >= 60 && points < TARGET_POINTS && (
         <div className="text-center font-black text-gray-400 text-sm animate-pulse">
           Almost there! {TARGET_POINTS - points} pts to go 🔥

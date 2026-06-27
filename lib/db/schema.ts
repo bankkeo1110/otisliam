@@ -2,7 +2,8 @@ import { pgTable, serial, text, integer, boolean, timestamp, varchar, unique } f
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
-  name: varchar('name', { length: 100 }).notNull(),
+  name: varchar('name', { length: 100 }).notNull().unique(),
+  passwordHash: varchar('password_hash', { length: 100 }),
   createdAt: timestamp('created_at').defaultNow(),
 });
 
