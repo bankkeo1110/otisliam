@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function SignupPage() {
-  const router = useRouter();
+function SignupForm() {
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from') || '/';
+
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -21,22 +24,21 @@ export default function SignupPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, password }),
+      credentials: 'same-origin',
     });
     const data = await res.json();
     setLoading(false);
     if (!res.ok) { setError(data.error); return; }
     localStorage.setItem('mathapp_student_id', String(data.studentId));
     localStorage.setItem('mathapp_student_name', data.name);
-    window.dispatchEvent(new Event('mathapp_student_changed'));
-    router.push('/');
-    router.refresh();
+    // Hard redirect so the browser sends the new cookie on the next request
+    window.location.href = from;
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="w-full max-w-sm">
 
-        {/* Logo */}
         <div className="text-center mb-6">
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="bg-[#1a1a1a] text-[#FFD015] font-black text-2xl w-12 h-12 rounded-2xl flex items-center justify-center card-comic">M</div>
@@ -102,12 +104,21 @@ export default function SignupPage() {
 
           <div className="mt-6 text-center border-t-2 border-gray-100 pt-5">
             <p className="text-gray-500 font-semibold text-sm">Already have an account?</p>
-            <Link href="/login" className="font-black text-[#4A6CF7] hover:underline">
+            <Link href={`/login${from !== '/' ? `?from=${encodeURIComponent(from)}` : ''}`}
+              className="font-black text-[#4A6CF7] hover:underline">
               Sign in here →
             </Link>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense fallback={null}>
+      <SignupForm />
+    </Suspense>
   );
 }

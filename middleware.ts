@@ -12,13 +12,19 @@ export async function middleware(req: NextRequest) {
   if (!PROTECTED.some(p => pathname.startsWith(p))) return NextResponse.next();
 
   const token = req.cookies.get('mathapp_token')?.value;
-  if (!token) return NextResponse.redirect(new URL('/login', req.url));
+  if (!token) {
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('from', pathname);
+    return NextResponse.redirect(loginUrl);
+  }
 
   try {
     await jwtVerify(token, JWT_SECRET);
     return NextResponse.next();
   } catch {
-    return NextResponse.redirect(new URL('/login', req.url));
+    const loginUrl = new URL('/login', req.url);
+    loginUrl.searchParams.set('from', pathname);
+    return NextResponse.redirect(loginUrl);
   }
 }
 

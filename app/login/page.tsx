@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { Suspense } from 'react';
 
-export default function LoginPage() {
-  const router = useRouter();
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const from = searchParams.get('from') || '/';
+
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -19,22 +22,21 @@ export default function LoginPage() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, password }),
+      credentials: 'same-origin',
     });
     const data = await res.json();
     setLoading(false);
     if (!res.ok) { setError(data.error); return; }
     localStorage.setItem('mathapp_student_id', String(data.studentId));
     localStorage.setItem('mathapp_student_name', data.name);
-    window.dispatchEvent(new Event('mathapp_student_changed'));
-    router.push('/');
-    router.refresh();
+    // Hard redirect so the browser sends the new cookie on the next request
+    window.location.href = from;
   };
 
   return (
     <div className="min-h-[80vh] flex items-center justify-center">
       <div className="w-full max-w-sm">
 
-        {/* Logo */}
         <div className="text-center mb-6">
           <Link href="/" className="inline-flex items-center gap-2">
             <div className="bg-[#1a1a1a] text-[#FFD015] font-black text-2xl w-12 h-12 rounded-2xl flex items-center justify-center card-comic">M</div>
@@ -44,6 +46,12 @@ export default function LoginPage() {
 
         <div className="card-comic bg-white rounded-3xl p-8">
           <h1 className="font-black text-2xl tracking-wide mb-6 text-[#1a1a1a]">SIGN IN 👋</h1>
+
+          {from !== '/' && (
+            <div className="card-comic-sm border-blue-300 bg-blue-50 text-blue-700 font-semibold text-sm px-4 py-2.5 rounded-xl mb-4">
+              Sign in to continue to <strong>{from}</strong>
+            </div>
+          )}
 
           <form onSubmit={submit} className="space-y-4">
             <div>
@@ -85,12 +93,21 @@ export default function LoginPage() {
 
           <div className="mt-6 text-center border-t-2 border-gray-100 pt-5">
             <p className="text-gray-500 font-semibold text-sm">Don&apos;t have an account?</p>
-            <Link href="/signup" className="font-black text-[#4A6CF7] hover:underline">
+            <Link href={`/signup${from !== '/' ? `?from=${encodeURIComponent(from)}` : ''}`}
+              className="font-black text-[#4A6CF7] hover:underline">
               Sign up here →
             </Link>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
