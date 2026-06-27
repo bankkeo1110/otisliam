@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, timestamp, varchar } from 'drizzle-orm/pg-core';
+import { pgTable, serial, text, integer, boolean, timestamp, varchar, unique } from 'drizzle-orm/pg-core';
 
 export const students = pgTable('students', {
   id: serial('id').primaryKey(),
@@ -25,3 +25,17 @@ export const answers = pgTable('answers', {
   isCorrect: boolean('is_correct').notNull(),
   answeredAt: timestamp('answered_at').defaultNow(),
 });
+
+// badge: 'bronze' (any score) | 'silver' (≥70%) | 'gold' (≥90%) | 'perfect' (100%)
+export const studentBadges = pgTable('student_badges', {
+  id: serial('id').primaryKey(),
+  studentId: integer('student_id').references(() => students.id).notNull(),
+  topic: varchar('topic', { length: 50 }).notNull(),
+  badge: varchar('badge', { length: 20 }).notNull(),
+  bestScore: integer('best_score').notNull(),
+  attempts: integer('attempts').notNull().default(1),
+  earnedAt: timestamp('earned_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+}, (table) => ({
+  studentTopicUniq: unique().on(table.studentId, table.topic),
+}));
