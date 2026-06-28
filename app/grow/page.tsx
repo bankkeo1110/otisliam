@@ -7,16 +7,8 @@ import { GROWTH_QUESTIONS, type GrowthQuestion } from '@/lib/growth-questions';
 type Slot = 'good-result' | 'bad-result' | null;
 type Assignment = { good: Slot; bad: Slot };
 type CardKey = 'good' | 'bad';
+type Zone = 'good-result' | 'bad-result';
 type Phase = 'intro' | 'playing' | 'done';
-
-function shuffle<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   const pct = Math.round((current / total) * 100);
@@ -44,6 +36,10 @@ export default function GrowPage() {
   const [checked, setChecked] = useState(false);
   const [correct, setCorrect] = useState<boolean | null>(null);
 
+  // Drag state
+  const [dragging, setDragging] = useState<CardKey | null>(null);
+  const [dragOver, setDragOver] = useState<Zone | null>(null);
+
   const q: GrowthQuestion = GROWTH_QUESTIONS[idx];
 
   const resetQuestion = useCallback(() => {
@@ -52,6 +48,8 @@ export default function GrowPage() {
     setAssignment({ good: null, bad: null });
     setChecked(false);
     setCorrect(null);
+    setDragging(null);
+    setDragOver(null);
   }, []);
 
   useEffect(() => {
@@ -64,24 +62,66 @@ export default function GrowPage() {
     setPhase('playing');
   };
 
-  const handleCardClick = (card: CardKey) => {
+  // Core assignment logic — shared between click and drag
+  const assignCard = (card: CardKey, zone: Zone) => {
     if (checked) return;
-    setSelected(prev => prev === card ? null : card);
-  };
-
-  const handleZoneClick = (zone: 'good-result' | 'bad-result') => {
-    if (checked || !selected) return;
     setAssignment(prev => {
       const next = { ...prev };
-      // Free the zone if something else is already there
+      // Vacate the target zone if another card is already there
       if (next.good === zone) next.good = null;
       if (next.bad === zone) next.bad = null;
-      next[selected] = zone;
+      next[card] = zone;
       return next;
     });
     setSelected(null);
   };
 
+  // ── Click interaction ────────────────────────────────────────────────────
+  const handleCardClick = (card: CardKey) => {
+    if (checked || cardIsAssigned(card)) return;
+    setSelected(prev => (prev === card ? null : card));
+  };
+
+  const handleZoneClick = (zone: Zone) => {
+    if (checked || !selected) return;
+    assignCard(selected, zone);
+  };
+
+  // ── Drag interaction ─────────────────────────────────────────────────────
+  const onDragStart = (e: React.DragEvent, card: CardKey) => {
+    e.dataTransfer.setData('card', card);
+    e.dataTransfer.effectAllowed = 'move';
+    setDragging(card);
+    setSelected(null);
+  };
+
+  const onDragEnd = () => {
+    setDragging(null);
+    setDragOver(null);
+  };
+
+  const onDragOver = (e: React.DragEvent, zone: Zone) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOver(zone);
+  };
+
+  const onDragLeave = (e: React.DragEvent) => {
+    // Only clear if leaving the zone itself (not a child element)
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+      setDragOver(null);
+    }
+  };
+
+  const onDrop = (e: React.DragEvent, zone: Zone) => {
+    e.preventDefault();
+    const card = e.dataTransfer.getData('card') as CardKey;
+    if (card === 'good' || card === 'bad') assignCard(card, zone);
+    setDragging(null);
+    setDragOver(null);
+  };
+
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const canCheck = assignment.good !== null && assignment.bad !== null;
 
   const handleCheck = () => {
@@ -93,41 +133,20 @@ export default function GrowPage() {
   };
 
   const handleNext = () => {
-    if (idx + 1 >= GROWTH_QUESTIONS.length) {
-      setPhase('done');
-    } else {
-      setIdx(i => i + 1);
-    }
+    if (idx + 1 >= GROWTH_QUESTIONS.length) setPhase('done');
+    else setIdx(i => i + 1);
   };
 
-  const zoneClasses = (zone: 'good-result' | 'bad-result', card: CardKey | null) => {
-    const base = 'rounded-2xl border-2 p-3 min-h-[90px] flex flex-col gap-1 transition cursor-pointer';
-    if (!checked) {
-      const isTarget = selected !== null;
-      return `${base} ${zone === 'good-result'
-        ? isTarget ? 'bg-green-50 border-green-400 border-dashed' : 'bg-green-50 border-green-300 border-dashed'
-        : isTarget ? 'bg-red-50 border-red-400 border-dashed' : 'bg-red-50 border-red-300 border-dashed'
-      }`;
-    }
-    // After check
-    const expectedCard: CardKey = zone === 'good-result' ? 'good' : 'bad';
-    const placedCard: CardKey | null = card;
-    const correct = placedCard === expectedCard;
-    return `${base} ${correct ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-400'}`;
-  };
-
-  // Which card key is placed in each zone?
-  const cardInZone = (zone: 'good-result' | 'bad-result'): CardKey | null => {
+  const cardInZone = (zone: Zone): CardKey | null => {
     if (assignment.good === zone) return 'good';
     if (assignment.bad === zone) return 'bad';
     return null;
   };
 
-  const actionText = (card: CardKey) => card === 'good' ? q.goodAction : q.badAction;
-
+  const actionText = (card: CardKey) => (card === 'good' ? q.goodAction : q.badAction);
   const cardIsAssigned = (card: CardKey) => assignment[card] !== null;
 
-  /* ── INTRO ── */
+  /* ── INTRO ─────────────────────────────────────────────────────────────── */
   if (phase === 'intro') {
     return (
       <div className="max-w-2xl mx-auto">
@@ -145,7 +164,7 @@ export default function GrowPage() {
             <div className="card-comic-sm bg-yellow-50 border-yellow-300 rounded-2xl p-4">
               <div className="text-3xl mb-2">🤔</div>
               <div className="font-black text-[#1a1a1a] mb-1">50 Activities</div>
-              <div className="text-sm font-semibold text-gray-500">Covering money, health, friends, skills, and your future</div>
+              <div className="text-sm font-semibold text-gray-500">Money, health, friends, skills, and your future</div>
             </div>
             <div className="card-comic-sm bg-green-50 border-green-300 rounded-2xl p-4">
               <div className="text-3xl mb-2">💡</div>
@@ -155,13 +174,17 @@ export default function GrowPage() {
           </div>
 
           <div className="card-comic-sm bg-[#FFF9C4] border-yellow-400 rounded-2xl p-5 mb-8 text-left">
-            <p className="font-black text-lg text-[#1a1a1a] mb-2">How to play:</p>
-            <ol className="space-y-2 text-sm font-semibold text-gray-700">
-              <li>1. Read the two ACTIONS on the left carefully</li>
-              <li>2. <strong>Click an action card</strong> to select it (it will glow ✨)</li>
-              <li>3. <strong>Click a result zone</strong> on the right to place it there</li>
-              <li>4. When both are placed, press <strong>Check!</strong> to see if you're right</li>
-            </ol>
+            <p className="font-black text-lg text-[#1a1a1a] mb-3">How to play:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm font-semibold text-gray-700">
+              <div className="flex gap-2 items-start">
+                <span className="text-xl">🖱️</span>
+                <span><strong>Desktop:</strong> Drag an action card and drop it on the correct outcome zone</span>
+              </div>
+              <div className="flex gap-2 items-start">
+                <span className="text-xl">👆</span>
+                <span><strong>Mobile:</strong> Tap an action card to select it, then tap the result zone</span>
+              </div>
+            </div>
           </div>
 
           <button onClick={startLesson}
@@ -173,7 +196,7 @@ export default function GrowPage() {
     );
   }
 
-  /* ── DONE ── */
+  /* ── DONE ──────────────────────────────────────────────────────────────── */
   if (phase === 'done') {
     const pct = Math.round((score / GROWTH_QUESTIONS.length) * 100);
     const msg = pct === 100 ? '🏆 PERFECT! You understand exactly why learning matters!'
@@ -198,8 +221,8 @@ export default function GrowPage() {
             <p className="font-black text-green-700 mb-2">🌱 Remember this always:</p>
             <p className="text-sm font-semibold text-gray-700">
               Every hour you spend studying today is an investment in the life you want tomorrow.
-              The choices you make at your age shape who you will become.
-              <strong> You have the power to build your amazing future — starting right now.</strong>
+              The choices you make at your age shape who you will become.{' '}
+              <strong>You have the power to build your amazing future — starting right now.</strong>
             </p>
           </div>
 
@@ -222,13 +245,13 @@ export default function GrowPage() {
     );
   }
 
-  /* ── PLAYING ── */
+  /* ── PLAYING ───────────────────────────────────────────────────────────── */
   return (
     <div className="max-w-3xl mx-auto">
       <ProgressBar current={idx} total={GROWTH_QUESTIONS.length} />
 
       <div className="flex items-center justify-between mb-4">
-        <span className={`card-comic-sm px-3 py-1 rounded-full font-black text-sm bg-white border-2`}>
+        <span className="card-comic-sm px-3 py-1 rounded-full font-black text-sm bg-white border-2">
           {q.emoji} {q.category}
         </span>
         <span className="font-black text-sm text-gray-500">⭐ {score} correct</span>
@@ -236,43 +259,59 @@ export default function GrowPage() {
 
       <div className="card-comic bg-white rounded-2xl p-5 mb-4">
         <p className="font-black text-base text-gray-500 text-center mb-1">ACTIVITY {idx + 1}</p>
-        <p className="font-black text-xl text-center text-[#1a1a1a] mb-1">What happens when you make these choices?</p>
-        <p className="text-sm font-semibold text-center text-gray-400 mb-5">
-          {!checked ? '👆 Click an action, then click a result zone on the right' : ''}
+        <p className="font-black text-xl text-center text-[#1a1a1a] mb-1">
+          What happens when you make these choices?
+        </p>
+        <p className="text-sm font-semibold text-center text-gray-400 mb-5 min-h-[20px]">
+          {!checked && !dragging && !selected && '🖱️ Drag a card to a zone — or tap to select then tap a zone'}
+          {!checked && dragging && '📦 Drop it on the correct outcome →'}
+          {!checked && selected && !dragging && '👆 Now tap a result zone on the right →'}
           {checked && correct && '🎉 Perfect match!'}
           {checked && correct === false && '❌ Not quite — see the correct answer below'}
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* ── LEFT: ACTION CARDS ── */}
+
+          {/* ── LEFT: ACTION CARDS ────────────────────────────────────────── */}
           <div className="space-y-3">
             <p className="font-black text-xs tracking-widest text-gray-400 text-center">YOUR CHOICES</p>
             {order.map(card => {
               const assigned = cardIsAssigned(card);
               const isSelected = selected === card;
-              let cls = 'w-full rounded-2xl border-2 p-4 text-left font-semibold text-sm transition ';
+              const isDraggingThis = dragging === card;
+
+              let cls = 'w-full rounded-2xl border-2 p-4 text-left font-semibold text-sm transition select-none ';
               if (checked) {
-                cls += assigned ? 'bg-gray-100 border-gray-300 opacity-60' : 'bg-gray-50 border-gray-200 opacity-40';
+                cls += 'bg-gray-100 border-gray-200 opacity-50 cursor-default';
               } else if (assigned) {
-                cls += 'bg-gray-100 border-gray-300 opacity-50 cursor-default';
+                cls += 'bg-gray-50 border-gray-200 opacity-40 cursor-default';
+              } else if (isDraggingThis) {
+                cls += 'bg-[#4A6CF7] text-white border-[#4A6CF7] opacity-50 cursor-grabbing scale-95';
               } else if (isSelected) {
-                cls += 'bg-[#4A6CF7] text-white border-[#4A6CF7] shadow-[0_0_0_4px_rgba(74,108,247,0.3)] cursor-pointer';
+                cls += 'bg-[#4A6CF7] text-white border-[#4A6CF7] shadow-[0_0_0_4px_rgba(74,108,247,0.35)] cursor-pointer';
               } else {
-                cls += 'bg-white border-[#1a1a1a] hover:bg-yellow-50 hover:border-yellow-400 cursor-pointer';
+                cls += 'bg-white border-[#1a1a1a] hover:bg-yellow-50 hover:border-yellow-400 cursor-grab active:cursor-grabbing';
               }
+
               return (
-                <button key={card} onClick={() => handleCardClick(card)} disabled={assigned && !isSelected || checked}
-                  className={cls}>
-                  <span className="block text-xs font-black mb-1 text-gray-400">
-                    {isSelected ? '✨ SELECTED — now click a zone →' : assigned ? '✓ Placed' : 'CHOICE'}
+                <div
+                  key={card}
+                  draggable={!assigned && !checked}
+                  onDragStart={e => onDragStart(e, card)}
+                  onDragEnd={onDragEnd}
+                  onClick={() => handleCardClick(card)}
+                  className={cls}
+                >
+                  <span className={`block text-xs font-black mb-1 ${isSelected || isDraggingThis ? 'text-blue-200' : 'text-gray-400'}`}>
+                    {isDraggingThis ? '📦 DRAGGING...' : isSelected ? '✨ SELECTED — tap a zone →' : assigned ? '✓ Placed' : 'CHOICE'}
                   </span>
                   {actionText(card)}
-                </button>
+                </div>
               );
             })}
           </div>
 
-          {/* ── RIGHT: RESULT ZONES ── */}
+          {/* ── RIGHT: RESULT ZONES ───────────────────────────────────────── */}
           <div className="space-y-3">
             <p className="font-black text-xs tracking-widest text-gray-400 text-center">WHERE IT LEADS</p>
 
@@ -280,30 +319,46 @@ export default function GrowPage() {
               const placed = cardInZone(zone);
               const isGoodZone = zone === 'good-result';
               const expectedCard: CardKey = isGoodZone ? 'good' : 'bad';
-              let zoneCls = 'rounded-2xl border-2 p-4 min-h-[100px] flex flex-col gap-2 transition ';
+              const isHovering = dragOver === zone;
+              const isActive = (selected !== null || dragging !== null) && !checked;
+
+              let zoneCls = 'rounded-2xl border-2 p-4 min-h-[110px] flex flex-col gap-2 transition-all ';
               if (!checked) {
-                zoneCls += selected
-                  ? isGoodZone
-                    ? 'bg-green-50 border-green-400 border-dashed cursor-pointer hover:bg-green-100'
-                    : 'bg-red-50 border-red-400 border-dashed cursor-pointer hover:bg-red-100'
-                  : isGoodZone
+                if (isHovering) {
+                  zoneCls += isGoodZone
+                    ? 'bg-green-100 border-green-500 border-solid scale-[1.02] shadow-lg cursor-copy'
+                    : 'bg-red-100 border-red-500 border-solid scale-[1.02] shadow-lg cursor-copy';
+                } else if (isActive) {
+                  zoneCls += isGoodZone
+                    ? 'bg-green-50 border-green-400 border-dashed cursor-pointer'
+                    : 'bg-red-50 border-red-400 border-dashed cursor-pointer';
+                } else {
+                  zoneCls += isGoodZone
                     ? 'bg-green-50 border-green-200 border-dashed'
                     : 'bg-red-50 border-red-200 border-dashed';
+                }
               } else {
-                const isCorrectPlacement = placed === expectedCard;
-                zoneCls += isCorrectPlacement
-                  ? 'bg-green-100 border-green-500'
-                  : 'bg-red-100 border-red-400';
+                const ok = placed === expectedCard;
+                zoneCls += ok ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-400';
               }
+
               return (
-                <div key={zone} onClick={() => handleZoneClick(zone)} className={zoneCls}>
+                <div
+                  key={zone}
+                  onClick={() => handleZoneClick(zone)}
+                  onDragOver={e => onDragOver(e, zone)}
+                  onDragLeave={onDragLeave}
+                  onDrop={e => onDrop(e, zone)}
+                  className={zoneCls}
+                >
                   <span className={`font-black text-xs tracking-widest ${isGoodZone ? 'text-green-600' : 'text-red-500'}`}>
                     {isGoodZone ? '😊 GREAT OUTCOME' : '😢 HARD OUTCOME'}
                   </span>
                   <span className="text-xs font-semibold text-gray-600">
                     {isGoodZone ? q.goodResult : q.badResult}
                   </span>
-                  {placed && (
+
+                  {placed ? (
                     <div className={`mt-1 rounded-xl px-3 py-2 text-xs font-black border ${
                       checked
                         ? placed === expectedCard
@@ -313,10 +368,13 @@ export default function GrowPage() {
                     }`}>
                       {actionText(placed)}
                     </div>
-                  )}
-                  {!placed && (
-                    <div className="mt-auto rounded-xl border border-dashed border-gray-300 px-3 py-2 text-xs text-gray-300 font-bold text-center">
-                      Drop here
+                  ) : (
+                    <div className={`mt-auto rounded-xl border border-dashed px-3 py-2 text-xs font-bold text-center transition-colors ${
+                      isHovering
+                        ? isGoodZone ? 'border-green-400 text-green-500 bg-green-50' : 'border-red-400 text-red-400 bg-red-50'
+                        : 'border-gray-300 text-gray-300'
+                    }`}>
+                      {isHovering ? '⬇ Release to drop' : 'Drop here'}
                     </div>
                   )}
                 </div>
@@ -325,16 +383,16 @@ export default function GrowPage() {
           </div>
         </div>
 
-        {/* ── After check: show correct answer if wrong ── */}
+        {/* ── After check: explain if wrong ─────────────────────────────── */}
         {checked && correct === false && (
           <div className="mt-4 card-comic-sm bg-blue-50 border-blue-300 rounded-2xl p-4 text-sm font-semibold text-blue-800">
-            <p className="font-black mb-1">💡 The correct matching:</p>
+            <p className="font-black mb-2">💡 The correct matching:</p>
             <p>✅ <strong>{q.goodAction}</strong> → {q.goodResult}</p>
             <p className="mt-1">❌ <strong>{q.badAction}</strong> → {q.badResult}</p>
           </div>
         )}
 
-        {/* ── Buttons ── */}
+        {/* ── Buttons ───────────────────────────────────────────────────── */}
         <div className="mt-5 flex gap-3">
           {!checked ? (
             <button onClick={handleCheck} disabled={!canCheck}
