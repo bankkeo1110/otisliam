@@ -46,7 +46,7 @@ describe('growth-questions data', () => {
 
   it('covers all 5 expected categories', () => {
     const expected = [
-      'Money & Future Life',
+      'Money & Buying',
       'Health & Energy',
       'Friendships & Respect',
       'Skills & Creativity',

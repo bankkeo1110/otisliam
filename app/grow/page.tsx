@@ -258,8 +258,8 @@ export default function GrowPage() {
       </div>
 
       <div className="card-comic bg-white rounded-2xl p-5 mb-4">
-        <p className="font-black text-base text-gray-500 text-center mb-1">ACTIVITY {idx + 1}</p>
-        <p className="font-black text-xl text-center text-[#1a1a1a] mb-1">
+        <p className="font-black text-sm text-gray-400 text-center mb-1 tracking-widest">ACTIVITY {idx + 1}</p>
+        <p className="font-black text-2xl text-center text-[#1a1a1a] mb-2">
           What happens when you make these choices?
         </p>
         <p className="text-sm font-semibold text-center text-gray-400 mb-5 min-h-[20px]">
@@ -280,7 +280,7 @@ export default function GrowPage() {
               const isSelected = selected === card;
               const isDraggingThis = dragging === card;
 
-              let cls = 'w-full rounded-2xl border-2 p-4 text-left font-semibold text-sm transition select-none ';
+              let cls = 'w-full rounded-2xl border-2 p-5 text-left font-bold text-base leading-snug transition select-none ';
               if (checked) {
                 cls += 'bg-gray-100 border-gray-200 opacity-50 cursor-default';
               } else if (assigned) {
@@ -302,8 +302,8 @@ export default function GrowPage() {
                   onClick={() => handleCardClick(card)}
                   className={cls}
                 >
-                  <span className={`block text-xs font-black mb-1 ${isSelected || isDraggingThis ? 'text-blue-200' : 'text-gray-400'}`}>
-                    {isDraggingThis ? '📦 DRAGGING...' : isSelected ? '✨ SELECTED — tap a zone →' : assigned ? '✓ Placed' : 'CHOICE'}
+                  <span className={`block text-xs font-black mb-2 tracking-widest ${isSelected || isDraggingThis ? 'text-blue-200' : 'text-gray-400'}`}>
+                    {isDraggingThis ? '📦 DRAGGING...' : isSelected ? '✨ SELECTED — tap a zone →' : assigned ? '✓ PLACED' : 'CHOICE'}
                   </span>
                   {actionText(card)}
                 </div>
@@ -351,15 +351,15 @@ export default function GrowPage() {
                   onDrop={e => onDrop(e, zone)}
                   className={zoneCls}
                 >
-                  <span className={`font-black text-xs tracking-widest ${isGoodZone ? 'text-green-600' : 'text-red-500'}`}>
+                  <span className={`font-black text-sm tracking-widest ${isGoodZone ? 'text-green-600' : 'text-red-500'}`}>
                     {isGoodZone ? '😊 GREAT OUTCOME' : '😢 HARD OUTCOME'}
                   </span>
-                  <span className="text-xs font-semibold text-gray-600">
+                  <span className="text-sm font-semibold text-gray-700 leading-snug">
                     {isGoodZone ? q.goodResult : q.badResult}
                   </span>
 
                   {placed ? (
-                    <div className={`mt-1 rounded-xl px-3 py-2 text-xs font-black border ${
+                    <div className={`mt-2 rounded-xl px-3 py-2 text-sm font-bold border leading-snug ${
                       checked
                         ? placed === expectedCard
                           ? 'bg-green-50 border-green-400 text-green-800'
@@ -369,10 +369,10 @@ export default function GrowPage() {
                       {actionText(placed)}
                     </div>
                   ) : (
-                    <div className={`mt-auto rounded-xl border border-dashed px-3 py-2 text-xs font-bold text-center transition-colors ${
+                    <div className={`mt-auto rounded-xl border border-dashed px-3 py-2 text-sm font-bold text-center transition-colors ${
                       isHovering
                         ? isGoodZone ? 'border-green-400 text-green-500 bg-green-50' : 'border-red-400 text-red-400 bg-red-50'
-                        : 'border-gray-300 text-gray-300'
+                        : 'border-gray-300 text-gray-400'
                     }`}>
                       {isHovering ? '⬇ Release to drop' : 'Drop here'}
                     </div>
