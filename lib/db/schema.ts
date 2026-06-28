@@ -4,6 +4,7 @@ export const students = pgTable('students', {
   id: serial('id').primaryKey(),
   name: varchar('name', { length: 100 }).notNull().unique(),
   passwordHash: varchar('password_hash', { length: 100 }),
+  avatar: varchar('avatar', { length: 10 }),
   createdAt: timestamp('created_at').defaultNow(),
 });
 

@@ -7,7 +7,7 @@ import { TOPICS } from '@/lib/questions';
 
 interface Badge { topic: string; badge: string; bestScore: number; attempts: number; earnedAt: string; }
 interface Answer { topic: string; question: string; correctAnswer: string; studentAnswer: string; isCorrect: boolean; answeredAt: string; }
-interface Student { id: number; name: string; }
+interface Student { id: number; name: string; avatar?: string | null; }
 
 const BADGE_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', perfect: '👑' };
 const BADGE_COLOR: Record<string, string> = {
@@ -18,7 +18,14 @@ const BADGE_COLOR: Record<string, string> = {
 };
 const BADGE_RANK: Record<string, number> = { bronze: 1, silver: 2, gold: 3, perfect: 4 };
 
-function avatarEmoji(badges: Badge[]): string {
+export const AVATARS = [
+  '🦁','🐯','🐻','🐼','🦊','🐺',
+  '🦄','🐲','🦈','🐙','🦋','🐸',
+  '🦅','🦉','🦜','🐬','🐒','🐘',
+  '🦒','🦓','🦝','🦩','🦚','👾',
+];
+
+function defaultAvatar(badges: Badge[]): string {
   const count = badges.length;
   const hasPerfect = badges.some(b => b.badge === 'perfect');
   const hasGold = badges.some(b => b.badge === 'gold');
@@ -33,6 +40,38 @@ function totalStars(badges: Badge[]): number {
   return badges.reduce((s, b) => s + BADGE_RANK[b.badge], 0);
 }
 
+function AvatarPicker({ current, onSelect, onClose }: {
+  current: string | null;
+  onSelect: (a: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      onClick={onClose}>
+      <div className="bg-white rounded-3xl p-6 shadow-2xl w-full max-w-sm"
+        onClick={e => e.stopPropagation()}>
+        <h3 className="text-2xl font-black text-gray-800 mb-1 text-center">Pick your avatar!</h3>
+        <p className="text-sm text-gray-400 text-center mb-4">Choose an animal or character</p>
+        <div className="grid grid-cols-6 gap-2">
+          {AVATARS.map(a => (
+            <button key={a} onClick={() => onSelect(a)}
+              className={`text-3xl w-11 h-11 rounded-xl transition-all flex items-center justify-center
+                ${current === a
+                  ? 'bg-blue-100 ring-2 ring-blue-500 scale-110'
+                  : 'hover:bg-gray-100 hover:scale-110 active:scale-95'}`}>
+              {a}
+            </button>
+          ))}
+        </div>
+        <button onClick={onClose}
+          className="mt-5 w-full py-2 rounded-xl bg-gray-100 text-gray-600 font-bold hover:bg-gray-200 transition">
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function StudentProfilePage() {
   const { id } = useParams<{ id: string }>();
   const [student, setStudent] = useState<Student | null>(null);
@@ -40,6 +79,10 @@ export default function StudentProfilePage() {
   const [recentAnswers, setRecentAnswers] = useState<Answer[]>([]);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [myId, setMyId] = useState<number | null>(null);
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [showPicker, setShowPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     fetch(`/api/students/${id}`)
@@ -50,11 +93,24 @@ export default function StudentProfilePage() {
       .then(data => {
         if (!data) return;
         setStudent(data.student);
+        setAvatar(data.student.avatar ?? null);
         setBadges(data.badges);
         setRecentAnswers(data.recentAnswers);
         setLoading(false);
       });
+    fetch('/api/auth/me').then(r => r.json()).then(d => {
+      setMyId(d.user?.studentId ?? null);
+    });
   }, [id]);
+
+  const handleSelectAvatar = async (a: string) => {
+    setAvatar(a);
+    setShowPicker(false);
+    setSaving(true);
+    await fetch('/api/profile/avatar', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ avatar: a }) });
+    setSaving(false);
+    window.dispatchEvent(new Event('mathapp_student_changed'));
+  };
 
   if (loading) return <div className="text-center py-20 text-2xl">Loading... ⏳</div>;
   if (notFound || !student) return (
@@ -65,17 +121,39 @@ export default function StudentProfilePage() {
     </div>
   );
 
+  const isOwn = myId !== null && myId === parseInt(id);
+  const displayAvatar = avatar ?? defaultAvatar(badges);
   const stars = totalStars(badges);
   const topicsCompleted = badges.length;
   const avgScore = badges.length ? Math.round(badges.reduce((s, b) => s + b.bestScore, 0) / badges.length) : 0;
 
   return (
     <div className="max-w-2xl mx-auto">
+      {showPicker && (
+        <AvatarPicker current={avatar} onSelect={handleSelectAvatar} onClose={() => setShowPicker(false)} />
+      )}
+
       {/* Header */}
       <div className="bg-white rounded-3xl shadow-lg p-8 mb-6 text-center">
-        <div className="text-7xl mb-3">{avatarEmoji(badges)}</div>
+        <div className="relative inline-block mb-3">
+          <div className="text-7xl">{displayAvatar}</div>
+          {isOwn && (
+            <button onClick={() => setShowPicker(true)}
+              className="absolute -bottom-1 -right-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-black w-7 h-7 rounded-full flex items-center justify-center shadow-md transition"
+              title="Change avatar">
+              ✏️
+            </button>
+          )}
+        </div>
+        {saving && <div className="text-xs text-blue-400 mb-1">Saving...</div>}
         <h1 className="text-3xl font-bold text-gray-800 mb-1">{student.name}</h1>
         <p className="text-gray-400 mb-6">Math Learner</p>
+        {isOwn && (
+          <button onClick={() => setShowPicker(true)}
+            className="mb-4 text-sm text-blue-500 font-semibold hover:text-blue-700 transition">
+            🎨 Change avatar
+          </button>
+        )}
         <div className="flex justify-center gap-8">
           <div className="text-center">
             <div className="text-3xl font-bold text-blue-600">{topicsCompleted}/6</div>
@@ -100,8 +178,7 @@ export default function StudentProfilePage() {
             const badge = badges.find(b => b.topic === t.id);
             return (
               <div key={t.id}
-                className={`border-2 rounded-2xl p-4 transition ${badge ? BADGE_COLOR[badge.badge] : 'border-gray-200 bg-gray-50 opacity-60'}`}
-              >
+                className={`border-2 rounded-2xl p-4 transition ${badge ? BADGE_COLOR[badge.badge] : 'border-gray-200 bg-gray-50 opacity-60'}`}>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-2xl">{t.emoji}</span>
                   <span className="font-bold">{t.label}</span>
@@ -158,7 +235,7 @@ export default function StudentProfilePage() {
       )}
 
       <div className="flex gap-3 justify-center">
-        <Link href={`/practice`} className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition">
+        <Link href="/practice" className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-full transition">
           🚀 Practice Now
         </Link>
         <Link href="/members" className="bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold py-3 px-6 rounded-full transition">

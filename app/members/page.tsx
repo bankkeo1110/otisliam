@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { TOPICS } from '@/lib/questions';
 
 interface Badge { topic: string; badge: string; bestScore: number; attempts: number; }
-interface Student { id: number; name: string; }
+interface Student { id: number; name: string; avatar?: string | null; }
 interface MemberData { student: Student; badges: Badge[]; }
 
 const BADGE_EMOJI: Record<string, string> = { bronze: '🥉', silver: '🥈', gold: '🥇', perfect: '👑' };
@@ -69,7 +69,7 @@ export default function MembersPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-5">
           {members.map(({ student, badges }) => {
             const top = topBadge(badges);
-            const avatar = avatarEmoji(badges);
+            const avatar = student.avatar || avatarEmoji(badges);
             const totalAttempts = badges.reduce((s, b) => s + b.attempts, 0);
             return (
               <Link key={student.id} href={`/student/${student.id}`}

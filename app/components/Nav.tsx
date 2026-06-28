@@ -11,7 +11,7 @@ function colorForName(name: string) {
   return AVATAR_COLORS[h];
 }
 
-interface AuthUser { studentId: number; name: string; }
+interface AuthUser { studentId: number; name: string; avatar?: string | null; }
 
 export default function Nav() {
   const pathname = usePathname();
@@ -81,10 +81,17 @@ export default function Nav() {
         )}
         {user && (
           <div className="flex items-center gap-2">
-            <Link href={`/student/${user.studentId}`} title={user.name}
-              className={`${colorForName(user.name)} card-comic-sm text-white font-black w-9 h-9 rounded-xl flex items-center justify-center text-sm select-none hover:opacity-90`}>
-              {user.name[0].toUpperCase()}
-            </Link>
+            {user.avatar ? (
+              <Link href={`/student/${user.studentId}`} title={user.name}
+                className="card-comic-sm w-9 h-9 rounded-xl flex items-center justify-center text-xl select-none hover:opacity-90 bg-white border-2 border-[#1a1a1a]">
+                {user.avatar}
+              </Link>
+            ) : (
+              <Link href={`/student/${user.studentId}`} title={user.name}
+                className={`${colorForName(user.name)} card-comic-sm text-white font-black w-9 h-9 rounded-xl flex items-center justify-center text-sm select-none hover:opacity-90`}>
+                {user.name[0].toUpperCase()}
+              </Link>
+            )}
             <span className="font-black text-sm text-[#1a1a1a] hidden sm:block">{user.name}</span>
             <button onClick={logout}
               className="card-comic-sm bg-white text-[#1a1a1a] font-black text-xs px-3 py-1.5 rounded-lg hover:bg-red-50 hover:border-red-400 hover:text-red-600 transition">
