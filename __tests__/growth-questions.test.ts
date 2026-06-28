@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest';
 import { GROWTH_QUESTIONS, CATEGORIES } from '../lib/growth-questions';
 
 describe('growth-questions data', () => {
-  it('has exactly 50 questions', () => {
-    expect(GROWTH_QUESTIONS).toHaveLength(50);
+  it('has exactly 1000 questions', () => {
+    expect(GROWTH_QUESTIONS).toHaveLength(1000);
   });
 
-  it('each question has required fields', () => {
+  it('each question has required fields including difficulty', () => {
+    const validDifficulties = ['easy', 'medium', 'hard', 'very hard'];
     for (const q of GROWTH_QUESTIONS) {
       expect(q.id, `q${q.id} missing id`).toBeTypeOf('number');
       expect(q.category, `q${q.id} missing category`).toBeTruthy();
@@ -15,12 +16,13 @@ describe('growth-questions data', () => {
       expect(q.badAction, `q${q.id} missing badAction`).toBeTruthy();
       expect(q.goodResult, `q${q.id} missing goodResult`).toBeTruthy();
       expect(q.badResult, `q${q.id} missing badResult`).toBeTruthy();
+      expect(validDifficulties, `q${q.id} invalid difficulty`).toContain(q.difficulty);
     }
   });
 
-  it('ids are sequential from 1 to 50', () => {
+  it('ids are sequential from 1 to 1000', () => {
     const ids = GROWTH_QUESTIONS.map(q => q.id);
-    expect(ids).toEqual(Array.from({ length: 50 }, (_, i) => i + 1));
+    expect(ids).toEqual(Array.from({ length: 1000 }, (_, i) => i + 1));
   });
 
   it('no question has identical goodAction and badAction', () => {
@@ -57,17 +59,20 @@ describe('growth-questions data', () => {
     }
   });
 
-  it('each category has at least 5 questions', () => {
+  it('each category has exactly 200 questions', () => {
     for (const cat of CATEGORIES) {
       const count = GROWTH_QUESTIONS.filter(q => q.category === cat).length;
-      expect(count, `${cat} has too few questions`).toBeGreaterThanOrEqual(5);
+      expect(count, `${cat} should have 200 questions`).toBe(200);
     }
   });
 
-  it('each category has exactly 10 questions', () => {
+  it('each category has 50 questions per difficulty level', () => {
+    const difficulties = ['easy', 'medium', 'hard', 'very hard'];
     for (const cat of CATEGORIES) {
-      const count = GROWTH_QUESTIONS.filter(q => q.category === cat).length;
-      expect(count, `${cat} should have 10 questions`).toBe(10);
+      for (const diff of difficulties) {
+        const count = GROWTH_QUESTIONS.filter(q => q.category === cat && q.difficulty === diff).length;
+        expect(count, `${cat} / ${diff} should have 50 questions`).toBe(50);
+      }
     }
   });
 

@@ -2,13 +2,60 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { GROWTH_QUESTIONS, type GrowthQuestion } from '@/lib/growth-questions';
+import { GROWTH_QUESTIONS, CATEGORIES, type GrowthQuestion, type Difficulty } from '@/lib/growth-questions';
 
 type Slot = 'good-result' | 'bad-result' | null;
 type Assignment = { good: Slot; bad: Slot };
 type CardKey = 'good' | 'bad';
 type Zone = 'good-result' | 'bad-result';
 type Phase = 'intro' | 'playing' | 'done';
+
+const SESSION_SIZE = 20;
+const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'very hard'];
+
+const CATEGORY_META: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
+  'Money & Buying':        { emoji: '💰', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-400' },
+  'Health & Energy':       { emoji: '💪', color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-400' },
+  'Friendships & Respect': { emoji: '🤝', color: 'text-blue-700',   bg: 'bg-blue-50',   border: 'border-blue-400' },
+  'Skills & Creativity':   { emoji: '🎨', color: 'text-purple-700', bg: 'bg-purple-50', border: 'border-purple-400' },
+  'Your Amazing Future':   { emoji: '🚀', color: 'text-red-700',    bg: 'bg-red-50',    border: 'border-red-400' },
+};
+
+function posKey(category: string) {
+  return `grow_pos_${category}`;
+}
+
+function getSessionQuestions(category: string): GrowthQuestion[] {
+  const catQs = GROWTH_QUESTIONS
+    .filter(q => q.category === category)
+    .sort((a, b) => DIFFICULTY_ORDER.indexOf(a.difficulty) - DIFFICULTY_ORDER.indexOf(b.difficulty));
+  const raw = typeof window !== 'undefined' ? localStorage.getItem(posKey(category)) : null;
+  const pos = raw ? parseInt(raw, 10) : 0;
+  const session = catQs.slice(pos, pos + SESSION_SIZE);
+  if (session.length === 0) {
+    return catQs.slice(0, SESSION_SIZE);
+  }
+  return session;
+}
+
+function advancePosition(category: string, sessionLength: number) {
+  const catTotal = GROWTH_QUESTIONS.filter(q => q.category === category).length;
+  const raw = typeof window !== 'undefined' ? localStorage.getItem(posKey(category)) : null;
+  const pos = raw ? parseInt(raw, 10) : 0;
+  const next = pos + sessionLength;
+  if (next >= catTotal) {
+    localStorage.removeItem(posKey(category));
+  } else {
+    localStorage.setItem(posKey(category), String(next));
+  }
+}
+
+function getCategoryProgress(category: string): { done: number; total: number } {
+  const total = GROWTH_QUESTIONS.filter(q => q.category === category).length;
+  const raw = typeof window !== 'undefined' ? localStorage.getItem(posKey(category)) : null;
+  const done = raw ? parseInt(raw, 10) : 0;
+  return { done, total };
+}
 
 function ProgressBar({ current, total }: { current: number; total: number }) {
   const pct = Math.round((current / total) * 100);
@@ -27,6 +74,8 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 
 export default function GrowPage() {
   const [phase, setPhase] = useState<Phase>('intro');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [sessionQuestions, setSessionQuestions] = useState<GrowthQuestion[]>([]);
   const [idx, setIdx] = useState(0);
   const [score, setScore] = useState(0);
 
@@ -36,11 +85,10 @@ export default function GrowPage() {
   const [checked, setChecked] = useState(false);
   const [correct, setCorrect] = useState<boolean | null>(null);
 
-  // Drag state
   const [dragging, setDragging] = useState<CardKey | null>(null);
   const [dragOver, setDragOver] = useState<Zone | null>(null);
 
-  const q: GrowthQuestion = GROWTH_QUESTIONS[idx];
+  const q: GrowthQuestion | undefined = sessionQuestions[idx];
 
   const resetQuestion = useCallback(() => {
     setOrder(Math.random() > 0.5 ? ['good', 'bad'] : ['bad', 'good']);
@@ -56,18 +104,19 @@ export default function GrowPage() {
     if (phase === 'playing') resetQuestion();
   }, [idx, phase, resetQuestion]);
 
-  const startLesson = () => {
+  const startLesson = (category: string) => {
+    const qs = getSessionQuestions(category);
+    setSelectedCategory(category);
+    setSessionQuestions(qs);
     setIdx(0);
     setScore(0);
     setPhase('playing');
   };
 
-  // Core assignment logic — shared between click and drag
   const assignCard = (card: CardKey, zone: Zone) => {
     if (checked) return;
     setAssignment(prev => {
       const next = { ...prev };
-      // Vacate the target zone if another card is already there
       if (next.good === zone) next.good = null;
       if (next.bad === zone) next.bad = null;
       next[card] = zone;
@@ -76,7 +125,6 @@ export default function GrowPage() {
     setSelected(null);
   };
 
-  // ── Click interaction ────────────────────────────────────────────────────
   const handleCardClick = (card: CardKey) => {
     if (checked || cardIsAssigned(card)) return;
     setSelected(prev => (prev === card ? null : card));
@@ -87,7 +135,6 @@ export default function GrowPage() {
     assignCard(selected, zone);
   };
 
-  // ── Drag interaction ─────────────────────────────────────────────────────
   const onDragStart = (e: React.DragEvent, card: CardKey) => {
     e.dataTransfer.setData('card', card);
     e.dataTransfer.effectAllowed = 'move';
@@ -107,7 +154,6 @@ export default function GrowPage() {
   };
 
   const onDragLeave = (e: React.DragEvent) => {
-    // Only clear if leaving the zone itself (not a child element)
     if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
       setDragOver(null);
     }
@@ -121,7 +167,6 @@ export default function GrowPage() {
     setDragOver(null);
   };
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
   const canCheck = assignment.good !== null && assignment.bad !== null;
 
   const handleCheck = () => {
@@ -133,8 +178,12 @@ export default function GrowPage() {
   };
 
   const handleNext = () => {
-    if (idx + 1 >= GROWTH_QUESTIONS.length) setPhase('done');
-    else setIdx(i => i + 1);
+    if (idx + 1 >= sessionQuestions.length) {
+      advancePosition(selectedCategory, sessionQuestions.length);
+      setPhase('done');
+    } else {
+      setIdx(i => i + 1);
+    }
   };
 
   const cardInZone = (zone: Zone): CardKey | null => {
@@ -143,7 +192,7 @@ export default function GrowPage() {
     return null;
   };
 
-  const actionText = (card: CardKey) => (card === 'good' ? q.goodAction : q.badAction);
+  const actionText = (card: CardKey) => (card === 'good' ? q!.goodAction : q!.badAction);
   const cardIsAssigned = (card: CardKey) => assignment[card] !== null;
 
   /* ── INTRO ─────────────────────────────────────────────────────────────── */
@@ -152,45 +201,52 @@ export default function GrowPage() {
       <div className="max-w-2xl mx-auto">
         <div className="card-comic bg-white rounded-3xl p-8 text-center">
           <div className="text-7xl mb-4">🌱</div>
-          <h1 className="font-black text-4xl text-[#1a1a1a] mb-2 tracking-wide">WHY YOU MUST STUDY</h1>
-          <p className="text-gray-500 font-bold mb-8 text-lg">A lesson about your amazing future</p>
+          <h1 className="font-black text-4xl text-[#1a1a1a] mb-2 tracking-wide">GROW YOUR FUTURE</h1>
+          <p className="text-gray-500 font-bold mb-8 text-lg">Choose a topic and play 20 activities</p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
-            <div className="card-comic-sm bg-blue-50 border-blue-300 rounded-2xl p-4">
-              <div className="text-3xl mb-2">🎮</div>
-              <div className="font-black text-[#1a1a1a] mb-1">Interactive</div>
-              <div className="text-sm font-semibold text-gray-500">Match choices to their real outcomes in life</div>
-            </div>
-            <div className="card-comic-sm bg-yellow-50 border-yellow-300 rounded-2xl p-4">
-              <div className="text-3xl mb-2">🤔</div>
-              <div className="font-black text-[#1a1a1a] mb-1">50 Activities</div>
-              <div className="text-sm font-semibold text-gray-500">Money, health, friends, skills, and your future</div>
-            </div>
-            <div className="card-comic-sm bg-green-50 border-green-300 rounded-2xl p-4">
-              <div className="text-3xl mb-2">💡</div>
-              <div className="font-black text-[#1a1a1a] mb-1">Discover</div>
-              <div className="text-sm font-semibold text-gray-500">How today's choices change your entire life</div>
-            </div>
+          <div className="grid grid-cols-1 gap-3 mb-8 text-left">
+            {CATEGORIES.map(cat => {
+              const meta = CATEGORY_META[cat] ?? { emoji: '📚', color: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-300' };
+              const { done, total } = getCategoryProgress(cat);
+              const sessions = Math.floor(done / SESSION_SIZE);
+              const pct = Math.round((done / total) * 100);
+              return (
+                <button
+                  key={cat}
+                  onClick={() => startLesson(cat)}
+                  className={`w-full text-left ${meta.bg} border-2 ${meta.border} card-comic-sm rounded-2xl p-4 hover:opacity-90 transition`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{meta.emoji}</span>
+                      <span className={`font-black text-lg ${meta.color}`}>{cat}</span>
+                    </div>
+                    {done > 0 && (
+                      <span className="text-xs font-black text-gray-500">{sessions} session{sessions !== 1 ? 's' : ''} done · {pct}%</span>
+                    )}
+                  </div>
+                  <div className="h-2 bg-white rounded-full border border-gray-200 overflow-hidden">
+                    <div className="h-full bg-[#4A6CF7] rounded-full transition-all" style={{ width: `${pct}%` }} />
+                  </div>
+                  <p className="text-xs font-semibold text-gray-500 mt-2">
+                    {done === 0
+                      ? `20 activities from ${total} total — starts easy`
+                      : done >= total
+                      ? `All ${total} done! Restart from beginning`
+                      : `Next: questions ${done + 1}–${Math.min(done + SESSION_SIZE, total)} of ${total}`}
+                  </p>
+                </button>
+              );
+            })}
           </div>
 
-          <div className="card-comic-sm bg-[#FFF9C4] border-yellow-400 rounded-2xl p-5 mb-8 text-left">
-            <p className="font-black text-lg text-[#1a1a1a] mb-3">How to play:</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm font-semibold text-gray-700">
-              <div className="flex gap-2 items-start">
-                <span className="text-xl">🖱️</span>
-                <span><strong>Desktop:</strong> Drag an action card and drop it on the correct outcome zone</span>
-              </div>
-              <div className="flex gap-2 items-start">
-                <span className="text-xl">👆</span>
-                <span><strong>Mobile:</strong> Tap an action card to select it, then tap the result zone</span>
-              </div>
+          <div className="card-comic-sm bg-[#FFF9C4] border-yellow-400 rounded-2xl p-5 text-left">
+            <p className="font-black text-sm text-[#1a1a1a] mb-2">How to play:</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-gray-700">
+              <div className="flex gap-2 items-start"><span>🖱️</span><span><strong>Desktop:</strong> Drag an action card and drop it on the correct outcome zone</span></div>
+              <div className="flex gap-2 items-start"><span>👆</span><span><strong>Mobile:</strong> Tap a card to select it, then tap a result zone</span></div>
             </div>
           </div>
-
-          <button onClick={startLesson}
-            className="card-comic w-full bg-[#4A6CF7] text-white font-black py-5 rounded-2xl text-xl hover:opacity-90 transition">
-            🚀 Start the Lesson!
-          </button>
         </div>
       </div>
     );
@@ -198,43 +254,48 @@ export default function GrowPage() {
 
   /* ── DONE ──────────────────────────────────────────────────────────────── */
   if (phase === 'done') {
-    const pct = Math.round((score / GROWTH_QUESTIONS.length) * 100);
-    const msg = pct === 100 ? '🏆 PERFECT! You understand exactly why learning matters!'
-      : pct >= 80 ? '🌟 Excellent! You have a great understanding of your future!'
-      : pct >= 60 ? '👍 Good job! Keep thinking about your choices every day.'
-      : '💪 Keep going! Every lesson makes you wiser about your future.';
+    const pct = Math.round((score / sessionQuestions.length) * 100);
+    const { done: newDone, total } = getCategoryProgress(selectedCategory);
+    const msg = pct === 100 ? '🏆 PERFECT! Flawless round!'
+      : pct >= 80 ? '🌟 Excellent! Keep it up!'
+      : pct >= 60 ? '👍 Good job! You\'re getting there.'
+      : '💪 Keep going! Every lesson makes you wiser.';
+    const meta = CATEGORY_META[selectedCategory] ?? { emoji: '📚', color: 'text-gray-700', bg: 'bg-gray-50', border: 'border-gray-300' };
     return (
       <div className="max-w-xl mx-auto text-center">
         <div className="card-comic bg-white rounded-3xl p-8">
           <div className="text-7xl mb-4">{pct === 100 ? '🏆' : pct >= 80 ? '🌟' : '🌱'}</div>
-          <h1 className="font-black text-3xl text-[#1a1a1a] mb-2">LESSON COMPLETE!</h1>
-          <p className="font-bold text-gray-500 mb-6">Why You Must Study</p>
+          <h1 className="font-black text-3xl text-[#1a1a1a] mb-2">SESSION COMPLETE!</h1>
+          <p className={`font-bold mb-6 ${meta.color}`}>{meta.emoji} {selectedCategory}</p>
 
           <div className="card-comic-sm bg-[#4A6CF7] text-white rounded-2xl p-5 mb-6">
-            <div className="font-black text-5xl mb-1">{score}/{GROWTH_QUESTIONS.length}</div>
+            <div className="font-black text-5xl mb-1">{score}/{sessionQuestions.length}</div>
             <div className="font-bold text-blue-200">{pct}% correct</div>
           </div>
 
-          <p className="font-black text-lg text-[#1a1a1a] mb-8">{msg}</p>
+          <p className="font-black text-lg text-[#1a1a1a] mb-6">{msg}</p>
 
-          <div className="card-comic-sm bg-green-50 border-green-300 rounded-2xl p-5 mb-8 text-left">
-            <p className="font-black text-green-700 mb-2">🌱 Remember this always:</p>
-            <p className="text-sm font-semibold text-gray-700">
-              Every hour you spend studying today is an investment in the life you want tomorrow.
-              The choices you make at your age shape who you will become.{' '}
-              <strong>You have the power to build your amazing future — starting right now.</strong>
+          <div className={`card-comic-sm ${meta.bg} border-2 ${meta.border} rounded-2xl p-4 mb-8 text-left`}>
+            <p className="font-black text-sm mb-1">📊 Your progress in {selectedCategory}:</p>
+            <div className="h-3 bg-white rounded-full border border-gray-200 overflow-hidden mb-1">
+              <div className="h-full bg-[#4A6CF7] rounded-full" style={{ width: `${Math.round((newDone / total) * 100)}%` }} />
+            </div>
+            <p className="text-xs font-semibold text-gray-600">
+              {newDone >= total
+                ? `All ${total} questions completed! Next session restarts from the beginning.`
+                : `${newDone} / ${total} questions done — next session picks up from here`}
             </p>
           </div>
 
           <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={startLesson}
+            <button onClick={() => startLesson(selectedCategory)}
               className="card-comic-sm bg-[#4A6CF7] text-white font-black py-3 px-6 rounded-xl hover:opacity-90 transition">
-              🔄 Do It Again
+              🔄 Play Again
             </button>
-            <Link href="/practice"
-              className="card-comic-sm bg-[#FFD015] text-[#1a1a1a] font-black py-3 px-6 rounded-xl hover:bg-yellow-300 transition">
-              🎯 Go Practice Math
-            </Link>
+            <button onClick={() => setPhase('intro')}
+              className={`card-comic-sm ${meta.bg} font-black py-3 px-6 rounded-xl hover:opacity-90 transition border-2 ${meta.border} ${meta.color}`}>
+              🗂️ Change Topic
+            </button>
             <Link href="/"
               className="card-comic-sm bg-white text-[#1a1a1a] font-black py-3 px-6 rounded-xl hover:bg-gray-50 transition">
               🏠 Home
@@ -245,16 +306,21 @@ export default function GrowPage() {
     );
   }
 
+  if (!q) return null;
+
   /* ── PLAYING ───────────────────────────────────────────────────────────── */
   return (
     <div className="max-w-3xl mx-auto">
-      <ProgressBar current={idx} total={GROWTH_QUESTIONS.length} />
+      <ProgressBar current={idx} total={sessionQuestions.length} />
 
       <div className="flex items-center justify-between mb-4">
         <span className="card-comic-sm px-3 py-1 rounded-full font-black text-sm bg-white border-2">
           {q.emoji} {q.category}
         </span>
-        <span className="font-black text-sm text-gray-500">⭐ {score} correct</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs font-black text-gray-400 uppercase">{q.difficulty}</span>
+          <span className="font-black text-sm text-gray-500">⭐ {score} correct</span>
+        </div>
       </div>
 
       <div className="card-comic bg-white rounded-2xl p-5 mb-4">
@@ -383,7 +449,6 @@ export default function GrowPage() {
           </div>
         </div>
 
-        {/* ── After check: explain if wrong ─────────────────────────────── */}
         {checked && correct === false && (
           <div className="mt-4 card-comic-sm bg-blue-50 border-blue-300 rounded-2xl p-4 text-sm font-semibold text-blue-800">
             <p className="font-black mb-2">💡 The correct matching:</p>
@@ -392,7 +457,6 @@ export default function GrowPage() {
           </div>
         )}
 
-        {/* ── Buttons ───────────────────────────────────────────────────── */}
         <div className="mt-5 flex gap-3">
           {!checked ? (
             <button onClick={handleCheck} disabled={!canCheck}
@@ -406,14 +470,14 @@ export default function GrowPage() {
           ) : (
             <button onClick={handleNext}
               className="flex-1 font-black text-lg py-3 rounded-xl transition card-comic bg-[#4A6CF7] text-white hover:opacity-90">
-              {idx + 1 >= GROWTH_QUESTIONS.length ? '🏆 See Results!' : 'Next Activity →'}
+              {idx + 1 >= sessionQuestions.length ? '🏆 See Results!' : 'Next Activity →'}
             </button>
           )}
         </div>
       </div>
 
       <div className="text-center">
-        <Link href="/" className="text-xs font-bold text-gray-400 hover:text-gray-600">← Back to Home</Link>
+        <button onClick={() => setPhase('intro')} className="text-xs font-bold text-gray-400 hover:text-gray-600">← Change Topic</button>
       </div>
     </div>
   );
