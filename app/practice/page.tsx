@@ -112,6 +112,7 @@ function PracticeApp() {
   const [flash, setFlash] = useState<{ val: string; key: number } | null>(null);
   const flashKey = useRef(0);
   const pendingRef = useRef<{ points: number; correct: number; total: number } | null>(null);
+  const autoAdvanceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(null);
 
@@ -171,6 +172,11 @@ function PracticeApp() {
 
     saveProgress(selectedTopic, newPoints, newCorrect, newTotal);
     pendingRef.current = { points: newPoints, correct: newCorrect, total: newTotal };
+
+    if (correct) {
+      if (autoAdvanceTimer.current) clearTimeout(autoAdvanceTimer.current);
+      autoAdvanceTimer.current = setTimeout(() => handleGotIt(), 1200);
+    }
 
     if (user) {
       fetch('/api/answers', {
@@ -425,14 +431,12 @@ function PracticeApp() {
                 </div>
               )}
 
-              <button onClick={handleGotIt}
-                className={`mt-4 w-full font-black text-lg py-3 px-6 rounded-xl transition card-comic ${
-                  isCorrect
-                    ? 'bg-green-500 hover:bg-green-600 text-white border-green-700'
-                    : 'bg-[#4A6CF7] hover:opacity-90 text-white border-blue-800'
-                }`}>
-                Got It! 👍
-              </button>
+              {!isCorrect && (
+                <button onClick={handleGotIt}
+                  className="mt-4 w-full font-black text-lg py-3 px-6 rounded-xl transition card-comic bg-[#4A6CF7] hover:opacity-90 text-white border-blue-800">
+                  Got It! 👍
+                </button>
+              )}
             </div>
           )}
         </div>

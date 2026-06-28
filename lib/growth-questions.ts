@@ -1,0 +1,373 @@
+export interface GrowthQuestion {
+  id: number;
+  category: string;
+  emoji: string;
+  goodAction: string;
+  badAction: string;
+  goodResult: string;
+  badResult: string;
+}
+
+export const GROWTH_QUESTIONS: GrowthQuestion[] = [
+  // ── Money & Future Life ───────────────────────────────────────────────────
+  {
+    id: 1, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Study math and science every single day',
+    badAction: 'Skip school and play games all day',
+    goodResult: 'Get a great job and buy whatever your family needs',
+    badResult: 'Struggle to pay for food and basic things',
+  },
+  {
+    id: 2, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Learn how money and numbers work',
+    badAction: 'Avoid math because it feels boring',
+    goodResult: 'Save money wisely and never get cheated',
+    badResult: 'Get tricked by bad deals and lose your savings',
+  },
+  {
+    id: 3, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Stay in school and graduate',
+    badAction: 'Drop out of school to "work early"',
+    goodResult: 'Earn 5–10x more money over your lifetime',
+    badResult: 'Stay stuck in the hardest, lowest-paying jobs',
+  },
+  {
+    id: 4, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Learn English and another language',
+    badAction: 'Refuse to learn any new language',
+    goodResult: 'Get high-paying international job offers',
+    badResult: 'Only qualify for low-wage local jobs',
+  },
+  {
+    id: 5, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Study computer skills every week',
+    badAction: 'Say "technology is too hard for me"',
+    goodResult: 'Build apps or websites that earn you money',
+    badResult: 'Lose your job to people who know technology',
+  },
+  {
+    id: 6, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Study hard and finish university',
+    badAction: 'Stop studying after middle school',
+    goodResult: 'Choose your dream career and earn well',
+    badResult: 'Take any job you can find, no matter how difficult',
+  },
+  {
+    id: 7, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Learn business and how companies work',
+    badAction: 'Ignore business: "I\'ll never need this"',
+    goodResult: 'Start your own company and be your own boss',
+    badResult: 'Always work under others\' rules and low wages',
+  },
+  {
+    id: 8, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Study and build valuable skills every year',
+    badAction: 'Spend 4+ hours a day on social media and games',
+    goodResult: 'Retire early and truly enjoy your life',
+    badResult: 'Work exhausting jobs into old age without savings',
+  },
+  {
+    id: 9, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Work hard in every class and build real skills',
+    badAction: 'Be lazy — do the minimum just to pass',
+    goodResult: 'Earn enough to travel the world and see new places',
+    badResult: 'Never be able to afford a vacation',
+  },
+  {
+    id: 10, category: 'Money & Future Life', emoji: '💰',
+    goodAction: 'Save and invest time in learning every day',
+    badAction: 'Spend all free time watching random videos',
+    goodResult: 'Have money, freedom, and choices in life',
+    badResult: 'Always feel like time and money are running out',
+  },
+
+  // ── Health & Energy ───────────────────────────────────────────────────────
+  {
+    id: 11, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Study health and nutrition at school',
+    badAction: 'Ignore health class — it seems unimportant',
+    goodResult: 'Feel amazing with strong energy every day',
+    badResult: 'Feel tired, sick, and slow most of the time',
+  },
+  {
+    id: 12, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Exercise regularly and enjoy PE class',
+    badAction: 'Skip PE and sit still all day',
+    goodResult: 'Stay strong, sharp, and live a longer life',
+    badResult: 'Get sick more often and feel weak',
+  },
+  {
+    id: 13, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Sleep at the right time every night',
+    badAction: 'Stay up late gaming or watching videos every night',
+    goodResult: 'Wake up sharp, focused, and ready to learn',
+    badResult: 'Fall asleep in class and miss everything important',
+  },
+  {
+    id: 14, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Learn about emotions and mental health',
+    badAction: 'Bottle up all your feelings and ignore them',
+    goodResult: 'Handle stress calmly and feel happy more often',
+    badResult: 'Feel overwhelmed, anxious, and stressed easily',
+  },
+  {
+    id: 15, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Eat healthy food you learned about in science',
+    badAction: 'Only eat junk food, candy, and sugary drinks',
+    goodResult: 'Have strong teeth, bones, and a focused brain',
+    badResult: 'Get cavities, weak bones, and struggle to concentrate',
+  },
+  {
+    id: 16, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Study first aid and safety at school',
+    badAction: 'Skip safety lessons: "I\'ll never need this"',
+    goodResult: 'Be able to help save someone\'s life in an emergency',
+    badResult: 'Panic and feel helpless when someone is hurt',
+  },
+  {
+    id: 17, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Learn about clean water and personal hygiene',
+    badAction: 'Ignore hygiene lessons — they seem boring',
+    goodResult: 'Stay healthy and rarely get sick',
+    badResult: 'Catch infections more often and spread them to others',
+  },
+  {
+    id: 18, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Practice taking deep breaths when upset',
+    badAction: 'React with anger to everything that frustrates you',
+    goodResult: 'Calm down fast and solve problems clearly',
+    badResult: 'Make every difficult situation much worse',
+  },
+  {
+    id: 19, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Study biology and learn how your body works',
+    badAction: 'Ignore biology: "Science is useless to me"',
+    goodResult: 'Make smart healthy choices that protect your body',
+    badResult: 'Fall for unhealthy trends and hurt yourself without knowing',
+  },
+  {
+    id: 20, category: 'Health & Energy', emoji: '💪',
+    goodAction: 'Drink enough water and rest properly',
+    badAction: 'Drink sugary drinks all day and never rest',
+    goodResult: 'Your brain works faster and remembers more',
+    badResult: 'Feel foggy, forgetful, and tired during lessons',
+  },
+
+  // ── Friendships & Respect ─────────────────────────────────────────────────
+  {
+    id: 21, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Share what you learn and help classmates',
+    badAction: 'Never help others — keep everything to yourself',
+    goodResult: 'Be the person everyone trusts and wants around',
+    badResult: 'End up lonely when you need help the most',
+  },
+  {
+    id: 22, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Learn to communicate clearly in language arts',
+    badAction: 'Avoid speaking up or writing because it feels hard',
+    goodResult: 'Make friends easily and get amazing opportunities',
+    badResult: 'Miss chances because no one understands your ideas',
+  },
+  {
+    id: 23, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Do your absolute best in every project',
+    badAction: 'Copy friends\' work every single time',
+    goodResult: 'Earn real respect that follows you forever',
+    badResult: 'Get caught cheating and lose everyone\'s trust',
+  },
+  {
+    id: 24, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Ask questions and be curious in every class',
+    badAction: 'Stay silent because you\'re afraid of being wrong',
+    goodResult: 'Learn faster and impress teachers and friends',
+    badResult: 'Stay confused and slowly fall behind everyone else',
+  },
+  {
+    id: 25, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Be honest even when you make a mistake',
+    badAction: 'Lie to avoid getting in trouble',
+    goodResult: 'Build a reputation that opens every door for you',
+    badResult: 'Get caught in your lies and lose all trust',
+  },
+  {
+    id: 26, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Help classmates understand the hard lessons',
+    badAction: 'Let others struggle alone — "not my problem"',
+    goodResult: 'Be remembered as someone who made a real difference',
+    badResult: 'Be forgotten — nobody helps you either when you need it',
+  },
+  {
+    id: 27, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Study hard so your family can be proud of you',
+    badAction: 'Give up on every difficult subject',
+    goodResult: 'See the joy on your parents\' faces — feel proud yourself',
+    badResult: 'Feel the pain of disappointing the people who love you',
+  },
+  {
+    id: 28, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Learn to disagree with people respectfully',
+    badAction: 'Fight and insult anyone who has a different opinion',
+    goodResult: 'Find better answers by working together with others',
+    badResult: 'Lose friends and create enemies everywhere you go',
+  },
+  {
+    id: 29, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Be kind and patient with younger or slower students',
+    badAction: 'Ignore or bully anyone who is different from you',
+    goodResult: 'Be looked up to as a true leader and role model',
+    badResult: 'Be feared — not respected — and feel alone inside',
+  },
+  {
+    id: 30, category: 'Friendships & Respect', emoji: '🤝',
+    goodAction: 'Study and grow so you can become a leader',
+    badAction: 'Follow the crowd and do whatever others do',
+    goodResult: 'One day lead a team and help your whole community',
+    badResult: 'Always depend on others to think and decide for you',
+  },
+
+  // ── Skills & Creativity ───────────────────────────────────────────────────
+  {
+    id: 31, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Practice drawing, music, or writing every day',
+    badAction: 'Say "I\'m just not a creative person" and give up',
+    goodResult: 'Discover a talent that brings you joy — and maybe money!',
+    badResult: 'Never know what incredible things you could have created',
+  },
+  {
+    id: 32, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Learn to type and use computers confidently',
+    badAction: 'Avoid all technology: "it\'s too complicated"',
+    goodResult: 'Work from anywhere in the world on exciting projects',
+    badResult: 'Get left behind as every job requires technology skills',
+  },
+  {
+    id: 33, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Study history to understand how the world works',
+    badAction: 'Skip history: "The past doesn\'t matter"',
+    goodResult: 'Make wise decisions and avoid repeating old mistakes',
+    badResult: 'Keep making the same costly mistakes others already solved',
+  },
+  {
+    id: 34, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Practice solving puzzles and hard problems',
+    badAction: 'Give up at the very first sign of difficulty',
+    goodResult: 'Become someone people rely on for smart solutions',
+    badResult: 'Get completely stuck on every obstacle in life',
+  },
+  {
+    id: 35, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Read books about many different subjects',
+    badAction: 'Only read the bare minimum you are forced to',
+    goodResult: 'Get creative ideas by connecting knowledge in surprising ways',
+    badResult: 'Run out of ideas quickly and feel stuck',
+  },
+  {
+    id: 36, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Learn geography and how countries connect',
+    badAction: 'Ignore the world outside your town: "I\'ll just use GPS"',
+    goodResult: 'Navigate anywhere and understand big world events',
+    badResult: 'Feel lost and helpless when technology fails you',
+  },
+  {
+    id: 37, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Learn music and practice an instrument',
+    badAction: 'Say "music is only for talented people — not me"',
+    goodResult: 'Develop memory, creativity, and a way to express feelings',
+    badResult: 'Miss a powerful way to heal, create, and connect with others',
+  },
+  {
+    id: 38, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Practice presenting and speaking in front of others',
+    badAction: 'Always avoid speaking — "I hate being in front of people"',
+    goodResult: 'Command any room, get promotions, and lead teams',
+    badResult: 'Get passed over for opportunities because you can\'t express yourself',
+  },
+  {
+    id: 39, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Study art, design, and how colors work',
+    badAction: 'Say "art is a waste of school time"',
+    goodResult: 'Create things that move people — and earn well as a designer',
+    badResult: 'Struggle forever to express your ideas visually',
+  },
+  {
+    id: 40, category: 'Skills & Creativity', emoji: '🎨',
+    goodAction: 'Learn from teachers, parents, and mentors',
+    badAction: 'Think "I already know enough — I don\'t need advice"',
+    goodResult: 'Skip years of painful mistakes by learning from others\' experience',
+    badResult: 'Learn everything the slow, hard, and expensive way by yourself',
+  },
+
+  // ── Your Amazing Future ───────────────────────────────────────────────────
+  {
+    id: 41, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Wake up early and follow a daily learning routine',
+    badAction: 'Sleep in and wait to feel "motivated" before starting',
+    goodResult: 'Build powerful habits that make success feel easy',
+    badResult: 'Procrastinate every day and fill your life with regret',
+  },
+  {
+    id: 42, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Set clear goals and track your progress each week',
+    badAction: 'Say "I\'ll figure out my future later"',
+    goodResult: 'Achieve your big dreams step by step',
+    badResult: 'Wake up at 30 wondering where your life went',
+  },
+  {
+    id: 43, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Give full effort to every subject at school',
+    badAction: 'Do only the minimum just to avoid failing',
+    goodResult: 'Discover what you\'re truly passionate about in life',
+    badResult: 'Never find work that excites or fulfills you',
+  },
+  {
+    id: 44, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Learn from your failures and try again every time',
+    badAction: 'Give up completely after your very first mistake',
+    goodResult: 'Grow stronger and smarter with every challenge',
+    badResult: 'Stay stuck at the same low level forever',
+  },
+  {
+    id: 45, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Reflect on what you learned each day',
+    badAction: 'Rush through school without ever thinking deeply',
+    goodResult: 'Understand yourself, grow faster, and make better choices',
+    badResult: 'Never discover your real strengths and weaknesses',
+  },
+  {
+    id: 46, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Be patient through the hardest lessons',
+    badAction: 'Give up immediately: "If it\'s hard, it\'s not worth it"',
+    goodResult: 'Master rare skills that almost nobody has',
+    badResult: 'Stay average in everything — never become truly great',
+  },
+  {
+    id: 47, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Dream big and study the path to get there',
+    badAction: 'Dream small because you\'re afraid of failing',
+    goodResult: 'Live a life that surprises even yourself',
+    badResult: 'Wonder "what if...?" for the rest of your life',
+  },
+  {
+    id: 48, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Focus on becoming better than yesterday',
+    badAction: 'Compare yourself to others and feel jealous',
+    goodResult: 'Become the absolute best version of YOU',
+    badResult: 'Make others feel bad — and still never improve yourself',
+  },
+  {
+    id: 49, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Study because you love growing and understanding more',
+    badAction: 'Study only to get grades — then forget everything',
+    goodResult: 'Fall in love with learning for the rest of your life',
+    badResult: 'Forget everything one week after the exam ends',
+  },
+  {
+    id: 50, category: 'Your Amazing Future', emoji: '🚀',
+    goodAction: 'Believe in yourself and keep going every day',
+    badAction: 'Tell yourself "I\'m not smart enough" and stop trying',
+    goodResult: 'Achieve things that make your whole family proud for generations',
+    badResult: 'Leave your true potential locked inside you forever — untouched',
+  },
+];
+
+export const CATEGORIES = [...new Set(GROWTH_QUESTIONS.map(q => q.category))];

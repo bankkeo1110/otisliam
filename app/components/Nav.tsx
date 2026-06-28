@@ -64,6 +64,7 @@ export default function Nav() {
       <div className="flex items-center gap-1">
         {link('/', 'Home')}
         {link('/practice', 'Practice')}
+        {link('/grow', '🌱 Grow')}
         {link('/members', 'Members')}
         {link('/report', 'Progress')}
       </div>
