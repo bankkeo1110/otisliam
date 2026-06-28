@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, ready } from '@/lib/db';
 import { students, studentBadges, answers } from '@/lib/db/schema';
 import { eq, desc } from 'drizzle-orm';
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  await ready;
   const { id } = await params;
   const studentId = parseInt(id);
   if (isNaN(studentId)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 });

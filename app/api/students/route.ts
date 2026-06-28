@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db, ready } from '@/lib/db';
 import { students } from '@/lib/db/schema';
 
 export async function GET() {
+  await ready;
   const all = await db.select().from(students).orderBy(students.name);
   return NextResponse.json(all);
 }

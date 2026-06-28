@@ -4,8 +4,10 @@ import { db } from '@/lib/db';
 import { students } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { signToken, COOKIE_NAME } from '@/lib/auth';
+import { ready } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
+  await ready;
   const { name, password } = await req.json();
 
   if (!name?.trim() || name.trim().length < 2) {
