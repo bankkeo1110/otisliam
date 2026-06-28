@@ -4,6 +4,7 @@ import { Suspense, useState, useEffect, useCallback, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { generateQuestion, TOPICS, TOPIC_CATEGORIES, type Topic, type Question, type Category } from '@/lib/questions';
+import { TARGET_POINTS, POINTS_CORRECT, POINTS_WRONG, calcScore, isSessionComplete, calcAccuracy } from '@/lib/practice-logic';
 
 const CATEGORY_ORDER: Category[] = ['numbers', 'fractions', 'measurement-geometry', 'problem-solving'];
 
@@ -15,9 +16,6 @@ const BADGE_LABEL: Record<string, string> = {
   bronze: 'Bronze Badge', silver: 'Silver Badge', gold: 'Gold Badge', perfect: 'Perfect Crown!',
 };
 
-const TARGET_POINTS = 100;
-const POINTS_CORRECT = 2;
-const POINTS_WRONG = 2;
 const PROGRESS_KEY = 'mathapp_session_progress';
 
 type Phase = 'setup' | 'playing' | 'result';
@@ -36,7 +34,6 @@ function playSound(correct: boolean) {
   try {
     const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
     if (correct) {
-      // Cheerful ascending chime: C5 → E5 → G5
       [523, 659, 784].forEach((freq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -51,7 +48,6 @@ function playSound(correct: boolean) {
         osc.stop(t + 0.3);
       });
     } else {
-      // Sad descending "womp womp"
       [380, 260].forEach((startFreq, i) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -85,7 +81,7 @@ function loadProgress(topic: Topic): SavedProgress | null {
     const data: SavedProgress = JSON.parse(raw);
     if (data.topic !== topic) return null;
     if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) return null;
-    if (data.points >= TARGET_POINTS) return null;
+    if (isSessionComplete(data.points)) return null;
     return data;
   } catch { return null; }
 }
@@ -115,6 +111,7 @@ function PracticeApp() {
 
   const [flash, setFlash] = useState<{ val: string; key: number } | null>(null);
   const flashKey = useRef(0);
+  const pendingRef = useRef<{ points: number; correct: number; total: number } | null>(null);
 
   const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(null);
 
@@ -130,6 +127,7 @@ function PracticeApp() {
     setQuestion(generateQuestion(selectedTopic));
     setChosen(null);
     setIsCorrect(null);
+    pendingRef.current = null;
   }, [selectedTopic]);
 
   const startGame = (forceNew = false) => {
@@ -151,7 +149,7 @@ function PracticeApp() {
     nextQuestion();
   };
 
-  const handleAnswer = async (choice: string) => {
+  const handleAnswer = (choice: string) => {
     if (chosen || !question) return;
     setChosen(choice);
     const correct = choice === question.answer;
@@ -159,7 +157,7 @@ function PracticeApp() {
 
     const newTotal = totalAnswered + 1;
     const newCorrect = correctCount + (correct ? 1 : 0);
-    const newPoints = Math.max(0, points + (correct ? POINTS_CORRECT : -POINTS_WRONG));
+    const newPoints = calcScore(points, correct);
 
     setTotalAnswered(newTotal);
     setCorrectCount(newCorrect);
@@ -172,6 +170,7 @@ function PracticeApp() {
     setTimeout(() => setFlash(null), 700);
 
     saveProgress(selectedTopic, newPoints, newCorrect, newTotal);
+    pendingRef.current = { points: newPoints, correct: newCorrect, total: newTotal };
 
     if (user) {
       fetch('/api/answers', {
@@ -187,30 +186,33 @@ function PracticeApp() {
         }),
       });
     }
+  };
 
-    setTimeout(async () => {
-      if (newPoints >= TARGET_POINTS) {
-        clearProgress();
-        if (user) {
-          try {
-            const res = await fetch('/api/sessions/complete', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                studentId: user.studentId,
-                topic: selectedTopic,
-                correct: newCorrect,
-                total: newTotal,
-              }),
-            });
-            setEarnedBadge(await res.json());
-          } catch { /* silent */ }
-        }
-        setPhase('result');
-      } else {
-        nextQuestion();
+  const handleGotIt = async () => {
+    const pending = pendingRef.current;
+    if (!pending) return;
+
+    if (isSessionComplete(pending.points)) {
+      clearProgress();
+      if (user) {
+        try {
+          const res = await fetch('/api/sessions/complete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              studentId: user.studentId,
+              topic: selectedTopic,
+              correct: pending.correct,
+              total: pending.total,
+            }),
+          });
+          setEarnedBadge(await res.json());
+        } catch { /* silent */ }
       }
-    }, 1800);
+      setPhase('result');
+    } else {
+      nextQuestion();
+    }
   };
 
   const topicInfo = TOPICS.find(t => t.id === selectedTopic)!;
@@ -290,7 +292,7 @@ function PracticeApp() {
 
   /* ── RESULT ── */
   if (phase === 'result') {
-    const accuracy = totalAnswered ? Math.round((correctCount / totalAnswered) * 100) : 0;
+    const accuracy = calcAccuracy(correctCount, totalAnswered);
     return (
       <div className="max-w-md mx-auto text-center">
         {earnedBadge && (earnedBadge.isNew || earnedBadge.isUpgrade) && (
@@ -413,17 +415,30 @@ function PracticeApp() {
               <div className={`text-center font-black text-lg ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
                 {isCorrect ? '✅ Correct! Great job!' : `❌ Wrong! The answer is ${question.answer}`}
               </div>
-              {!isCorrect && question.explanation && (
-                <div className="mt-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl p-3 text-sm font-semibold text-gray-700 text-left">
-                  💡 <span className="font-black text-gray-800">How to find it:</span> {question.explanation}
+
+              {question.explanation && (
+                <div className={`mt-3 border-2 rounded-xl p-3 text-sm font-semibold text-gray-700 text-left ${
+                  isCorrect ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-300'
+                }`}>
+                  💡 <span className="font-black text-gray-800">{isCorrect ? 'Why that\'s right:' : 'How to find it:'}</span>{' '}
+                  {question.explanation}
                 </div>
               )}
+
+              <button onClick={handleGotIt}
+                className={`mt-4 w-full font-black text-lg py-3 px-6 rounded-xl transition card-comic ${
+                  isCorrect
+                    ? 'bg-green-500 hover:bg-green-600 text-white border-green-700'
+                    : 'bg-[#4A6CF7] hover:opacity-90 text-white border-blue-800'
+                }`}>
+                Got It! 👍
+              </button>
             </div>
           )}
         </div>
       )}
 
-      {points >= 60 && points < TARGET_POINTS && (
+      {points >= 60 && points < TARGET_POINTS && !chosen && (
         <div className="text-center font-black text-gray-400 text-sm animate-pulse">
           Almost there! {TARGET_POINTS - points} pts to go 🔥
         </div>
