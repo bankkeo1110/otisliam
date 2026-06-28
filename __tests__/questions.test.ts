@@ -43,6 +43,13 @@ describe('generateQuestion – structure', () => {
           const unique = new Set(q.choices);
           expect(unique.size).toBe(4);
         });
+
+        it(`run #${i + 1}: has a non-empty explanation string`, () => {
+          const q = generateQuestion(topic);
+          expect(typeof q.explanation).toBe('string');
+          expect(q.explanation.length).toBeGreaterThan(0);
+          expect(q.explanation).not.toMatch(/undefined/i);
+        });
       }
     });
   }

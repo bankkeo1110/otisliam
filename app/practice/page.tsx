@@ -18,8 +18,83 @@ const BADGE_LABEL: Record<string, string> = {
 const TARGET_POINTS = 100;
 const POINTS_CORRECT = 2;
 const POINTS_WRONG = 2;
+const PROGRESS_KEY = 'mathapp_session_progress';
 
 type Phase = 'setup' | 'playing' | 'result';
+
+interface SavedProgress {
+  topic: Topic;
+  points: number;
+  correctCount: number;
+  totalAnswered: number;
+  savedAt: number;
+}
+
+// ── Sound effects via Web Audio API ──────────────────────────────────────────
+
+function playSound(correct: boolean) {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    if (correct) {
+      // Cheerful ascending chime: C5 → E5 → G5
+      [523, 659, 784].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const t = ctx.currentTime + i * 0.12;
+        gain.gain.setValueAtTime(0.25, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+        osc.start(t);
+        osc.stop(t + 0.3);
+      });
+    } else {
+      // Sad descending "womp womp"
+      [380, 260].forEach((startFreq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sawtooth';
+        const t = ctx.currentTime + i * 0.25;
+        osc.frequency.setValueAtTime(startFreq, t);
+        osc.frequency.exponentialRampToValueAtTime(startFreq * 0.55, t + 0.22);
+        gain.gain.setValueAtTime(0.18, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + 0.22);
+        osc.start(t);
+        osc.stop(t + 0.22);
+      });
+    }
+  } catch { /* audio not supported */ }
+}
+
+// ── Session progress persistence ──────────────────────────────────────────────
+
+function saveProgress(topic: Topic, points: number, correctCount: number, totalAnswered: number) {
+  try {
+    localStorage.setItem(PROGRESS_KEY, JSON.stringify({ topic, points, correctCount, totalAnswered, savedAt: Date.now() }));
+  } catch { /* ignore */ }
+}
+
+function loadProgress(topic: Topic): SavedProgress | null {
+  try {
+    const raw = localStorage.getItem(PROGRESS_KEY);
+    if (!raw) return null;
+    const data: SavedProgress = JSON.parse(raw);
+    if (data.topic !== topic) return null;
+    if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) return null;
+    if (data.points >= TARGET_POINTS) return null;
+    return data;
+  } catch { return null; }
+}
+
+function clearProgress() {
+  try { localStorage.removeItem(PROGRESS_KEY); } catch { /* ignore */ }
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 
 function PracticeApp() {
   const searchParams = useSearchParams();
@@ -41,9 +116,15 @@ function PracticeApp() {
   const [flash, setFlash] = useState<{ val: string; key: number } | null>(null);
   const flashKey = useRef(0);
 
+  const [savedProgress, setSavedProgress] = useState<SavedProgress | null>(null);
+
   useEffect(() => {
     fetch('/api/auth/me').then(r => r.json()).then(d => setUser(d.user ?? null));
   }, []);
+
+  useEffect(() => {
+    setSavedProgress(loadProgress(selectedTopic));
+  }, [selectedTopic]);
 
   const nextQuestion = useCallback(() => {
     setQuestion(generateQuestion(selectedTopic));
@@ -51,10 +132,18 @@ function PracticeApp() {
     setIsCorrect(null);
   }, [selectedTopic]);
 
-  const startGame = () => {
-    setPoints(0);
-    setCorrectCount(0);
-    setTotalAnswered(0);
+  const startGame = (forceNew = false) => {
+    const saved = !forceNew ? savedProgress : null;
+    if (saved) {
+      setPoints(saved.points);
+      setCorrectCount(saved.correctCount);
+      setTotalAnswered(saved.totalAnswered);
+    } else {
+      setPoints(0);
+      setCorrectCount(0);
+      setTotalAnswered(0);
+      clearProgress();
+    }
     setEarnedBadge(null);
     setFlash(null);
     setPhase('playing');
@@ -76,9 +165,13 @@ function PracticeApp() {
     setCorrectCount(newCorrect);
     setPoints(newPoints);
 
+    playSound(correct);
+
     flashKey.current++;
     setFlash({ val: correct ? `+${POINTS_CORRECT}` : `-${POINTS_WRONG}`, key: flashKey.current });
     setTimeout(() => setFlash(null), 700);
+
+    saveProgress(selectedTopic, newPoints, newCorrect, newTotal);
 
     if (user) {
       fetch('/api/answers', {
@@ -97,6 +190,7 @@ function PracticeApp() {
 
     setTimeout(async () => {
       if (newPoints >= TARGET_POINTS) {
+        clearProgress();
         if (user) {
           try {
             const res = await fetch('/api/sessions/complete', {
@@ -116,7 +210,7 @@ function PracticeApp() {
       } else {
         nextQuestion();
       }
-    }, 1200);
+    }, 1800);
   };
 
   const topicInfo = TOPICS.find(t => t.id === selectedTopic)!;
@@ -125,7 +219,6 @@ function PracticeApp() {
   if (phase === 'setup') {
     return (
       <div className="max-w-xl mx-auto">
-        {/* Greeting */}
         {user && (
           <div className="card-comic bg-[#4A6CF7] text-white rounded-2xl px-5 py-3 mb-5 flex items-center gap-3">
             <div className="text-2xl">👋</div>
@@ -169,10 +262,28 @@ function PracticeApp() {
           🎮 Reach <strong>100 points</strong> to complete · ✅ Correct <strong>+{POINTS_CORRECT} pts</strong> · ❌ Wrong <strong>−{POINTS_WRONG} pts</strong>
         </div>
 
-        <button onClick={startGame}
-          className="card-comic w-full bg-[#FFD015] text-[#1a1a1a] font-black py-4 rounded-2xl text-lg hover:bg-yellow-300 transition">
-          ▶ START PRACTICE
-        </button>
+        {savedProgress ? (
+          <div className="space-y-3">
+            <div className="card-comic-sm bg-amber-50 border-amber-400 rounded-2xl p-4 text-sm font-bold text-amber-800">
+              💾 Saved progress found: <strong>{savedProgress.points} pts</strong> · {savedProgress.correctCount}/{savedProgress.totalAnswered} correct
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <button onClick={() => startGame(false)}
+                className="card-comic bg-[#FFD015] text-[#1a1a1a] font-black py-4 rounded-2xl text-base hover:bg-yellow-300 transition">
+                ▶ Resume
+              </button>
+              <button onClick={() => startGame(true)}
+                className="card-comic bg-white text-[#1a1a1a] font-black py-4 rounded-2xl text-base hover:bg-gray-50 transition">
+                🔄 New Game
+              </button>
+            </div>
+          </div>
+        ) : (
+          <button onClick={() => startGame(false)}
+            className="card-comic w-full bg-[#FFD015] text-[#1a1a1a] font-black py-4 rounded-2xl text-lg hover:bg-yellow-300 transition">
+            ▶ START PRACTICE
+          </button>
+        )}
       </div>
     );
   }
@@ -222,7 +333,7 @@ function PracticeApp() {
           <p className="text-sm text-gray-400 font-semibold mb-6">{totalAnswered} questions answered</p>
 
           <div className="flex flex-wrap gap-3 justify-center">
-            <button onClick={startGame}
+            <button onClick={() => { setSavedProgress(null); startGame(true); }}
               className="card-comic-sm bg-[#FFD015] text-[#1a1a1a] font-black py-3 px-5 rounded-xl hover:bg-yellow-300 transition">
               🔄 Try Again
             </button>
@@ -296,9 +407,17 @@ function PracticeApp() {
               );
             })}
           </div>
+
           {chosen && (
-            <div className={`mt-5 text-center font-black text-lg ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
-              {isCorrect ? '✅ Correct! Great job!' : `❌ Answer: ${question.answer}`}
+            <div className="mt-5">
+              <div className={`text-center font-black text-lg ${isCorrect ? 'text-green-600' : 'text-red-500'}`}>
+                {isCorrect ? '✅ Correct! Great job!' : `❌ Wrong! The answer is ${question.answer}`}
+              </div>
+              {!isCorrect && question.explanation && (
+                <div className="mt-3 bg-yellow-50 border-2 border-yellow-300 rounded-xl p-3 text-sm font-semibold text-gray-700 text-left">
+                  💡 <span className="font-black text-gray-800">How to find it:</span> {question.explanation}
+                </div>
+              )}
             </div>
           )}
         </div>
