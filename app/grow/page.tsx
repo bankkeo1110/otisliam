@@ -3,12 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { GROWTH_QUESTIONS, CATEGORIES, type GrowthQuestion, type Difficulty } from '@/lib/growth-questions';
+import { WHY_STUDY_QUESTIONS, type WhyStudyQuestion } from '@/lib/why-study-questions';
 
 type Slot = 'good-result' | 'bad-result' | null;
 type Assignment = { good: Slot; bad: Slot };
 type CardKey = 'good' | 'bad';
 type Zone = 'good-result' | 'bad-result';
-type Phase = 'splash' | 'intro' | 'playing' | 'done';
+type Phase = 'splash' | 'why-study' | 'why-done' | 'intro' | 'playing' | 'done';
 
 const SESSION_SIZE = 20;
 const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'very hard'];
@@ -160,6 +161,325 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
       </div>
       <div className="h-3 bg-gray-100 rounded-full border-2 border-[#1a1a1a] overflow-hidden">
         <div className="h-full bg-[#4A6CF7] rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+// ── Result-zone image (used inside Why Study lesson) ───────────────────────
+function ResultImage({ keyword, id, seed }: { keyword: string; id: number; seed: number }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const src = `https://loremflickr.com/480/200/${keyword}?lock=${id * 10 + seed}`;
+  return (
+    <div className="relative w-full h-32 rounded-xl overflow-hidden bg-gray-100 mb-2">
+      {!loaded && !error && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <span className="text-3xl animate-pulse">🖼️</span>
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <span className="text-3xl">🖼️</span>
+        </div>
+      )}
+      {!error && (
+        <img
+          key={src}
+          src={src}
+          alt=""
+          className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => setError(true)}
+        />
+      )}
+    </div>
+  );
+}
+
+// ── Standalone "Why You Must Study" lesson (30 questions) ──────────────────
+function WhyStudyLesson({ onBack, onAllTopics }: { onBack: () => void; onAllTopics: () => void }) {
+  const [wsIdx, setWsIdx] = useState(0);
+  const [wsScore, setWsScore] = useState(0);
+  const [wsDone, setWsDone] = useState(false);
+
+  const [order, setOrder] = useState<[CardKey, CardKey]>(['good', 'bad']);
+  const [selected, setSelected] = useState<CardKey | null>(null);
+  const [assignment, setAssignment] = useState<Assignment>({ good: null, bad: null });
+  const [checked, setChecked] = useState(false);
+  const [correct, setCorrect] = useState<boolean | null>(null);
+  const [dragging, setDragging] = useState<CardKey | null>(null);
+  const [dragOver, setDragOver] = useState<Zone | null>(null);
+
+  const q: WhyStudyQuestion = WHY_STUDY_QUESTIONS[wsIdx];
+  const total = WHY_STUDY_QUESTIONS.length;
+
+  const reset = useCallback(() => {
+    setOrder(Math.random() > 0.5 ? ['good', 'bad'] : ['bad', 'good']);
+    setSelected(null);
+    setAssignment({ good: null, bad: null });
+    setChecked(false);
+    setCorrect(null);
+    setDragging(null);
+    setDragOver(null);
+  }, []);
+
+  useEffect(() => { reset(); }, [wsIdx, reset]);
+
+  if (wsDone) {
+    const pct = Math.round((wsScore / total) * 100);
+    const msg = pct === 100 ? '🏆 PERFECT! You know exactly why studying matters!'
+      : pct >= 80 ? '🌟 Excellent! You have a great understanding of your future!'
+      : pct >= 60 ? '👍 Good job! Keep thinking about your choices every day.'
+      : '💪 Keep going! Every lesson makes you wiser about your future.';
+    return (
+      <div className="max-w-xl mx-auto text-center">
+        <div className="card-comic bg-white rounded-3xl p-8">
+          <div className="text-7xl mb-4">{pct === 100 ? '🏆' : pct >= 80 ? '🌟' : '📚'}</div>
+          <h1 className="font-black text-3xl text-[#1a1a1a] mb-2">LESSON COMPLETE!</h1>
+          <p className="font-bold text-gray-500 mb-6">Why You Must Study</p>
+          <div className="card-comic-sm bg-[#4A6CF7] text-white rounded-2xl p-5 mb-6">
+            <div className="font-black text-5xl mb-1">{wsScore}/{total}</div>
+            <div className="font-bold text-blue-200">{pct}% correct</div>
+          </div>
+          <p className="font-black text-lg text-[#1a1a1a] mb-8">{msg}</p>
+          <div className="card-comic-sm bg-[#FFF9C4] border-yellow-400 rounded-2xl p-5 mb-8 text-left">
+            <p className="font-black text-green-700 mb-2">🌱 Remember always:</p>
+            <p className="text-sm font-semibold text-gray-700">
+              Every hour you spend studying today is an investment in the life you want tomorrow.
+              The choices you make right now shape who you will become.{' '}
+              <strong>You have the power to build your amazing future — starting right now.</strong>
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <button onClick={() => { setWsIdx(0); setWsScore(0); setWsDone(false); }}
+              className="card-comic-sm bg-[#4A6CF7] text-white font-black py-3 px-6 rounded-xl hover:opacity-90 transition">
+              🔄 Try Again
+            </button>
+            <button onClick={onAllTopics}
+              className="card-comic-sm bg-[#FFD015] text-[#1a1a1a] font-black py-3 px-6 rounded-xl hover:bg-yellow-300 transition">
+              🌱 All Topics
+            </button>
+            <Link href="/" className="card-comic-sm bg-white text-[#1a1a1a] font-black py-3 px-6 rounded-xl hover:bg-gray-50 transition">
+              🏠 Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const assignCard = (card: CardKey, zone: Zone) => {
+    if (checked) return;
+    setAssignment(prev => {
+      const next = { ...prev };
+      if (next.good === zone) next.good = null;
+      if (next.bad === zone) next.bad = null;
+      next[card] = zone;
+      return next;
+    });
+    setSelected(null);
+  };
+
+  const handleCardClick = (card: CardKey) => {
+    if (checked || assignment[card] !== null) return;
+    setSelected(prev => (prev === card ? null : card));
+  };
+  const handleZoneClick = (zone: Zone) => {
+    if (checked || !selected) return;
+    assignCard(selected, zone);
+  };
+  const onDragStart = (e: React.DragEvent, card: CardKey) => {
+    e.dataTransfer.setData('card', card);
+    e.dataTransfer.effectAllowed = 'move';
+    setDragging(card); setSelected(null);
+  };
+  const onDragEnd = () => { setDragging(null); setDragOver(null); };
+  const onDragOver = (e: React.DragEvent, zone: Zone) => {
+    e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setDragOver(zone);
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) setDragOver(null);
+  };
+  const onDrop = (e: React.DragEvent, zone: Zone) => {
+    e.preventDefault();
+    const card = e.dataTransfer.getData('card') as CardKey;
+    if (card === 'good' || card === 'bad') assignCard(card, zone);
+    setDragging(null); setDragOver(null);
+  };
+
+  const canCheck = assignment.good !== null && assignment.bad !== null;
+  const cardInZone = (zone: Zone): CardKey | null => {
+    if (assignment.good === zone) return 'good';
+    if (assignment.bad === zone) return 'bad';
+    return null;
+  };
+  const actionText = (card: CardKey) => card === 'good' ? q.goodAction : q.badAction;
+
+  const handleCheck = () => {
+    if (!canCheck) return;
+    const isCorrect = assignment.good === 'good-result' && assignment.bad === 'bad-result';
+    setCorrect(isCorrect);
+    setChecked(true);
+    if (isCorrect) setWsScore(s => s + 1);
+  };
+  const handleNext = () => {
+    if (wsIdx + 1 >= total) setWsDone(true);
+    else setWsIdx(i => i + 1);
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto">
+      {/* Progress */}
+      <div className="mb-6">
+        <div className="flex justify-between items-center mb-1">
+          <span className="font-black text-sm text-gray-500">{wsIdx} / {total} situations</span>
+          <span className="font-black text-sm text-[#4A6CF7]">{Math.round((wsIdx / total) * 100)}% complete</span>
+        </div>
+        <div className="h-3 bg-gray-100 rounded-full border-2 border-[#1a1a1a] overflow-hidden">
+          <div className="h-full bg-[#4A6CF7] rounded-full transition-all duration-500" style={{ width: `${(wsIdx / total) * 100}%` }} />
+        </div>
+      </div>
+
+      <div className="card-comic bg-white rounded-2xl p-5 mb-4">
+        {/* Situation header */}
+        <div className="flex items-center justify-between mb-4">
+          <span className="card-comic-sm px-3 py-1 bg-[#FFF9C4] border-yellow-400 rounded-full font-black text-sm">
+            {q.situation}
+          </span>
+          <span className="font-black text-sm text-gray-500">⭐ {wsScore} correct</span>
+        </div>
+
+        <p className="font-black text-xl text-center text-[#1a1a1a] mb-2">
+          What happens when you make these choices?
+        </p>
+        <p className="text-sm font-semibold text-center text-gray-400 mb-5 min-h-[20px]">
+          {!checked && !dragging && !selected && '🖱️ Drag a card — or tap to select, then tap a zone'}
+          {!checked && dragging && '📦 Drop it on the correct outcome →'}
+          {!checked && selected && !dragging && '👆 Now tap a result zone →'}
+          {checked && correct && '🎉 Perfect match!'}
+          {checked && correct === false && '❌ Not quite — see the correct answer below'}
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+          {/* ── LEFT: Action cards ──────────────────────────────────── */}
+          <div className="space-y-3">
+            <p className="font-black text-xs tracking-widest text-gray-400 text-center">YOUR CHOICE</p>
+            {order.map(card => {
+              const assigned = assignment[card] !== null;
+              const isSelected = selected === card;
+              const isDraggingThis = dragging === card;
+              let cls = 'w-full rounded-2xl border-2 p-5 text-left font-bold text-base leading-snug transition select-none ';
+              if (checked)           cls += 'bg-gray-100 border-gray-200 opacity-50 cursor-default';
+              else if (assigned)     cls += 'bg-gray-50 border-gray-200 opacity-40 cursor-default';
+              else if (isDraggingThis) cls += 'bg-[#4A6CF7] text-white border-[#4A6CF7] opacity-50 cursor-grabbing scale-95';
+              else if (isSelected)   cls += 'bg-[#4A6CF7] text-white border-[#4A6CF7] shadow-[0_0_0_4px_rgba(74,108,247,0.35)] cursor-pointer';
+              else                   cls += 'bg-white border-[#1a1a1a] hover:bg-yellow-50 hover:border-yellow-400 cursor-grab active:cursor-grabbing';
+              return (
+                <div key={card} draggable={!assigned && !checked}
+                  onDragStart={e => onDragStart(e, card)} onDragEnd={onDragEnd}
+                  onClick={() => handleCardClick(card)} className={cls}>
+                  <span className={`block text-xs font-black mb-2 tracking-widest ${isSelected || isDraggingThis ? 'text-blue-200' : 'text-gray-400'}`}>
+                    {isDraggingThis ? '📦 DRAGGING...' : isSelected ? '✨ SELECTED — tap a zone →' : assigned ? '✓ PLACED' : 'CHOICE'}
+                  </span>
+                  {actionText(card)}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* ── RIGHT: Result zones with images ─────────────────────── */}
+          <div className="space-y-3">
+            <p className="font-black text-xs tracking-widest text-gray-400 text-center">WHERE IT LEADS</p>
+            {(['good-result', 'bad-result'] as const).map(zone => {
+              const placed = cardInZone(zone);
+              const isGoodZone = zone === 'good-result';
+              const expectedCard: CardKey = isGoodZone ? 'good' : 'bad';
+              const isHovering = dragOver === zone;
+              const isActive = (selected !== null || dragging !== null) && !checked;
+
+              let zoneCls = 'rounded-2xl border-2 p-3 flex flex-col gap-2 transition-all ';
+              if (!checked) {
+                if (isHovering) zoneCls += isGoodZone ? 'bg-green-100 border-green-500 scale-[1.02] shadow-lg cursor-copy' : 'bg-red-100 border-red-500 scale-[1.02] shadow-lg cursor-copy';
+                else if (isActive) zoneCls += isGoodZone ? 'bg-green-50 border-green-400 border-dashed cursor-pointer' : 'bg-red-50 border-red-400 border-dashed cursor-pointer';
+                else zoneCls += isGoodZone ? 'bg-green-50 border-green-200 border-dashed' : 'bg-red-50 border-red-200 border-dashed';
+              } else {
+                zoneCls += placed === expectedCard ? 'bg-green-100 border-green-500' : 'bg-red-100 border-red-400';
+              }
+
+              return (
+                <div key={zone} onClick={() => handleZoneClick(zone)}
+                  onDragOver={e => onDragOver(e, zone)} onDragLeave={onDragLeave}
+                  onDrop={e => onDrop(e, zone)} className={zoneCls}>
+
+                  <span className={`font-black text-sm tracking-widest ${isGoodZone ? 'text-green-600' : 'text-red-500'}`}>
+                    {isGoodZone ? '😊 GREAT OUTCOME' : '😢 HARD OUTCOME'}
+                  </span>
+
+                  {/* Result image */}
+                  <ResultImage
+                    keyword={isGoodZone ? q.goodImageKw : q.badImageKw}
+                    id={q.id}
+                    seed={isGoodZone ? 0 : 1}
+                  />
+
+                  <span className="text-sm font-semibold text-gray-700 leading-snug">
+                    {isGoodZone ? q.goodResult : q.badResult}
+                  </span>
+
+                  {placed ? (
+                    <div className={`mt-1 rounded-xl px-3 py-2 text-sm font-bold border leading-snug ${
+                      checked
+                        ? placed === expectedCard ? 'bg-green-50 border-green-400 text-green-800' : 'bg-red-50 border-red-400 text-red-800'
+                        : 'bg-white border-gray-300 text-gray-700'
+                    }`}>
+                      {actionText(placed)}
+                    </div>
+                  ) : (
+                    <div className={`rounded-xl border border-dashed px-3 py-2 text-sm font-bold text-center transition-colors ${
+                      isHovering
+                        ? isGoodZone ? 'border-green-400 text-green-500 bg-green-50' : 'border-red-400 text-red-400 bg-red-50'
+                        : 'border-gray-300 text-gray-400'
+                    }`}>
+                      {isHovering ? '⬇ Release to drop' : 'Drop here'}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {checked && correct === false && (
+          <div className="mt-4 card-comic-sm bg-blue-50 border-blue-300 rounded-2xl p-4 text-sm font-semibold text-blue-800">
+            <p className="font-black mb-2">💡 The correct matching:</p>
+            <p>✅ <strong>{q.goodAction}</strong> → {q.goodResult}</p>
+            <p className="mt-1">❌ <strong>{q.badAction}</strong> → {q.badResult}</p>
+          </div>
+        )}
+
+        <div className="mt-5 flex gap-3">
+          {!checked ? (
+            <button onClick={handleCheck} disabled={!canCheck}
+              className={`flex-1 font-black text-lg py-3 rounded-xl transition card-comic ${
+                canCheck ? 'bg-[#FFD015] text-[#1a1a1a] hover:bg-yellow-300' : 'bg-gray-100 text-gray-400 cursor-not-allowed border-gray-200'
+              }`}>
+              {canCheck ? 'Check! ✓' : 'Place both choices first...'}
+            </button>
+          ) : (
+            <button onClick={handleNext}
+              className="flex-1 font-black text-lg py-3 rounded-xl transition card-comic bg-[#4A6CF7] text-white hover:opacity-90">
+              {wsIdx + 1 >= total ? '🏆 See Results!' : 'Next Situation →'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="text-center">
+        <button onClick={onBack} className="text-xs font-bold text-gray-400 hover:text-gray-600">
+          ← Back to Why You Must Study
+        </button>
       </div>
     </div>
   );
@@ -341,14 +661,32 @@ export default function GrowPage() {
             </div>
           </div>
 
-          <button
-            onClick={() => setPhase('intro')}
-            className="card-comic w-full bg-[#4A6CF7] text-white font-black py-5 rounded-2xl text-xl hover:opacity-90 transition"
-          >
-            🌱 Choose a Topic to Start!
-          </button>
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={() => setPhase('why-study')}
+              className="card-comic w-full bg-[#4A6CF7] text-white font-black py-5 rounded-2xl text-xl hover:opacity-90 transition"
+            >
+              📚 Start Lesson — Why You Must Study!
+            </button>
+            <button
+              onClick={() => setPhase('intro')}
+              className="card-comic-sm w-full bg-white text-[#1a1a1a] font-black py-3 rounded-2xl text-base hover:bg-gray-50 transition border-2"
+            >
+              🌱 Explore All 5 Topics (1000 questions)
+            </button>
+          </div>
         </div>
       </div>
+    );
+  }
+
+  /* ── WHY-STUDY player ──────────────────────────────────────────────────── */
+  if (phase === 'why-study' || phase === 'why-done') {
+    return (
+      <WhyStudyLesson
+        onBack={() => setPhase('splash')}
+        onAllTopics={() => setPhase('intro')}
+      />
     );
   }
 
