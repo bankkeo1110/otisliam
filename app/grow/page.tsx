@@ -167,12 +167,21 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 // ── Result-zone image (used inside Why Study lesson) ───────────────────────
-function ResultImage({ keyword, id, seed }: { keyword: string; id: number; seed: number }) {
+function ResultImage({ keyword, lock }: { keyword: string; lock: number }) {
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState(false);
-  const src = `https://loremflickr.com/480/200/${keyword}?lock=${id * 10 + seed}`;
+  // Use the first keyword only — loremflickr returns far better results with
+  // a single broad tag than comma-joined multi-tags (which often return nothing).
+  const primaryKw = keyword.split(',')[0].trim();
+  const src = `https://loremflickr.com/480/200/${primaryKw}?lock=${lock}`;
+
+  useEffect(() => {
+    setLoaded(false);
+    setError(false);
+  }, [src]);
+
   return (
-    <div className="relative w-full h-32 rounded-xl overflow-hidden bg-gray-100 mb-2">
+    <div className="relative w-full h-36 rounded-xl overflow-hidden bg-gray-100 mb-2">
       {!loaded && !error && (
         <div className="absolute inset-0 flex items-center justify-center">
           <span className="text-3xl animate-pulse">🖼️</span>
@@ -185,9 +194,8 @@ function ResultImage({ keyword, id, seed }: { keyword: string; id: number; seed:
       )}
       {!error && (
         <img
-          key={src}
           src={src}
-          alt=""
+          alt={primaryKw}
           className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
           onLoad={() => setLoaded(true)}
           onError={() => setError(true)}
@@ -417,11 +425,10 @@ function WhyStudyLesson({ onBack, onAllTopics }: { onBack: () => void; onAllTopi
                     {isGoodZone ? '😊 GREAT OUTCOME' : '😢 HARD OUTCOME'}
                   </span>
 
-                  {/* Result image */}
+                  {/* Result image — lock numbers are 50 apart so good/bad never share the same Flickr photo */}
                   <ResultImage
                     keyword={isGoodZone ? q.goodImageKw : q.badImageKw}
-                    id={q.id}
-                    seed={isGoodZone ? 0 : 1}
+                    lock={isGoodZone ? q.id * 100 : q.id * 100 + 50}
                   />
 
                   <span className="text-sm font-semibold text-gray-700 leading-snug">

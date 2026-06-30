@@ -5,8 +5,8 @@ export interface WhyStudyQuestion {
   badAction: string;
   goodResult: string;
   badResult: string;
-  goodImageKw: string;
-  badImageKw: string;
+  goodImageKw: string; // single broad Flickr tag
+  badImageKw: string;  // single broad Flickr tag
 }
 
 export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
@@ -17,8 +17,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Play games and leave homework until just before bed',
     goodResult: 'Finish early, play freely, and show up to school confident and ready!',
     badResult: 'Stay up super late, feel exhausted at school, and hand in messy work.',
-    goodImageKw: 'child,homework,happy,finished',
-    badImageKw: 'tired,kid,night,homework',
+    goodImageKw: 'happy',
+    badImageKw: 'tired',
   },
   {
     id: 2,
@@ -27,8 +27,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Skip maths practice because it feels boring',
     goodResult: 'Solve every maths problem like a supercomputer — fast and right!',
     badResult: 'Get stuck on every question and feel left behind the whole class.',
-    goodImageKw: 'child,math,success,happy',
-    badImageKw: 'confused,student,math,struggle',
+    goodImageKw: 'success',
+    badImageKw: 'confused',
   },
   {
     id: 3,
@@ -37,8 +37,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Watch videos on your phone instead of reading',
     goodResult: 'Your vocabulary explodes — stories become magical adventures in your mind!',
     badResult: 'Reading gets harder each year, making every school subject feel tough.',
-    goodImageKw: 'child,reading,book,happy',
-    badImageKw: 'kid,phone,screen,night',
+    goodImageKw: 'reading',
+    badImageKw: 'bored',
   },
   {
     id: 4,
@@ -47,8 +47,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Stay quiet and pretend you understood everything',
     goodResult: 'You get it right away and feel confident helping your classmates too!',
     badResult: 'You get more confused every day until the whole subject feels impossible.',
-    goodImageKw: 'student,raising,hand,classroom',
-    badImageKw: 'confused,student,desk,alone',
+    goodImageKw: 'education',
+    badImageKw: 'frustration',
   },
   {
     id: 5,
@@ -57,8 +57,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Daydream and doodle random things during science class',
     goodResult: 'Remember everything for the test and discover how amazing science really is!',
     badResult: 'Forget everything, fail the test, and miss out on discovering cool things.',
-    goodImageKw: 'child,science,excited,experiment',
-    badImageKw: 'student,bored,classroom,daydream',
+    goodImageKw: 'science',
+    badImageKw: 'failure',
   },
   {
     id: 6,
@@ -67,8 +67,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Only open your notes the night before a big test',
     goodResult: 'Lessons stick in your brain for years — the knowledge becomes part of you!',
     badResult: 'Forget everything after each test and have to relearn it all again and again.',
-    goodImageKw: 'student,studying,evening,focused',
-    badImageKw: 'kid,stress,cramming,night',
+    goodImageKw: 'studying',
+    badImageKw: 'stress',
   },
   {
     id: 7,
@@ -77,8 +77,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Skip new vocabulary because the words seem hard to remember',
     goodResult: 'Write amazing stories, understand movies, and talk to people anywhere in the world!',
     badResult: 'Struggle to write even simple sentences and feel left behind in class.',
-    goodImageKw: 'child,reading,book,confident',
-    badImageKw: 'kid,writing,struggle,blank',
+    goodImageKw: 'books',
+    badImageKw: 'sad',
   },
   {
     id: 8,
@@ -87,8 +87,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Let your teammates do all the work and do nothing yourself',
     goodResult: 'The whole team shines, friendships grow stronger, and everyone learns!',
     badResult: 'Your team struggles, friendships break, and you learn absolutely nothing.',
-    goodImageKw: 'children,teamwork,project,happy',
-    badImageKw: 'kids,arguing,sad,group',
+    goodImageKw: 'teamwork',
+    badImageKw: 'argument',
   },
   {
     id: 9,
@@ -97,8 +97,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Only practise when you feel like it — which is almost never',
     goodResult: 'Play beautiful songs that make everyone smile and feel proud of you!',
     badResult: 'Never improve, give up, and miss discovering an incredible hidden talent.',
-    goodImageKw: 'child,piano,music,happy',
-    badImageKw: 'kid,instrument,giving,up',
+    goodImageKw: 'music',
+    badImageKw: 'giving-up',
   },
   {
     id: 10,
@@ -107,8 +107,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Try to cram all spelling words on the morning of the test',
     goodResult: 'Ace the spelling test and feel totally confident writing anything!',
     badResult: 'Mix up every word, fail the test, and feel embarrassed in front of the class.',
-    goodImageKw: 'test,grade,excellent,student',
-    badImageKw: 'failed,test,paper,marks',
+    goodImageKw: 'achievement',
+    badImageKw: 'embarrassed',
   },
   {
     id: 11,
@@ -117,8 +117,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Think coding is too hard and only for genius adults',
     goodResult: 'Build your own games, robots, and apps — become a creator, not just a user!',
     badResult: 'Be left out of the most exciting and highest-paying jobs of the future.',
-    goodImageKw: 'child,coding,computer,robot',
-    badImageKw: 'kid,confused,technology,stuck',
+    goodImageKw: 'robot',
+    badImageKw: 'excluded',
   },
   {
     id: 12,
@@ -127,8 +127,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Check your phone every 5 minutes while trying to study',
     goodResult: 'Finish studying in 30 minutes and truly understand everything you read!',
     badResult: 'Study for 3 hours, understand almost nothing, and waste your whole afternoon.',
-    goodImageKw: 'child,focused,studying,desk',
-    badImageKw: 'kid,phone,distracted,study',
+    goodImageKw: 'focus',
+    badImageKw: 'distracted',
   },
   {
     id: 13,
@@ -137,8 +137,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Skip hard problems immediately because you don\'t want to get them wrong',
     goodResult: 'Your brain grows stronger every time you push through the hard part!',
     badResult: 'Easy things stay easy but hard things get even harder year after year.',
-    goodImageKw: 'child,breakthrough,happy,learning',
-    badImageKw: 'kid,giving,up,homework',
+    goodImageKw: 'determination',
+    badImageKw: 'lazy',
   },
   {
     id: 14,
@@ -147,8 +147,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Go straight home and play video games every single day after school',
     goodResult: 'Discover hidden talents, make amazing friends, and build incredible skills!',
     badResult: 'Miss the experiences and friendships that would have changed your whole life.',
-    goodImageKw: 'children,club,activity,excited',
-    badImageKw: 'kid,alone,gaming,home',
+    goodImageKw: 'club',
+    badImageKw: 'lonely',
   },
   {
     id: 15,
@@ -157,8 +157,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Get embarrassed by mistakes, hide them, and give up trying',
     goodResult: 'Every mistake becomes a lesson — you learn twice as fast as everyone else!',
     badResult: 'Fear of failure makes you afraid to try anything new, and you stop growing.',
-    goodImageKw: 'child,improving,smile,learning',
-    badImageKw: 'kid,afraid,hiding,classroom',
+    goodImageKw: 'learning',
+    badImageKw: 'fear',
   },
   {
     id: 16,
@@ -167,8 +167,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Think history is just boring old stuff that doesn\'t affect you',
     goodResult: 'Understand why the world is the way it is — and how YOU can help change it!',
     badResult: 'Make the same mistakes people made in the past without even knowing it.',
-    goodImageKw: 'child,history,excited,museum',
-    badImageKw: 'student,bored,classroom,window',
+    goodImageKw: 'history',
+    badImageKw: 'ignorance',
   },
   {
     id: 17,
@@ -177,8 +177,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Wing it and just hope for the best on test day',
     goodResult: 'Walk in totally confident, finish early, and score at the very top!',
     badResult: 'Panic completely, go blank on every question, and deeply disappoint yourself.',
-    goodImageKw: 'student,confident,exam,prepared',
-    badImageKw: 'kid,stress,exam,panic',
+    goodImageKw: 'confidence',
+    badImageKw: 'panic',
   },
   {
     id: 18,
@@ -187,8 +187,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Say "I can\'t draw" and never try anything creative',
     goodResult: 'Develop artistic skill that surprises everyone — including yourself!',
     badResult: 'Never discover the amazing talent that was just waiting inside you to come out.',
-    goodImageKw: 'child,drawing,art,proud',
-    badImageKw: 'kid,blank,paper,sad',
+    goodImageKw: 'art',
+    badImageKw: 'regret',
   },
   {
     id: 19,
@@ -197,8 +197,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Fake being sick or make excuses to skip PE class whenever possible',
     goodResult: 'Get fit, make great friends, and discover sports you absolutely love!',
     badResult: 'Miss the physical development your body desperately needs to grow strong.',
-    goodImageKw: 'children,soccer,sports,happy',
-    badImageKw: 'kid,missing,sport,alone',
+    goodImageKw: 'sport',
+    badImageKw: 'unhealthy',
   },
   {
     id: 20,
@@ -207,8 +207,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Think libraries are boring places that only teachers like',
     goodResult: 'Find books that open your mind to worlds you never knew existed!',
     badResult: 'Miss the greatest FREE resource ever invented for your entire childhood.',
-    goodImageKw: 'child,library,books,amazed',
-    badImageKw: 'kid,bored,school,window',
+    goodImageKw: 'library',
+    badImageKw: 'boredom',
   },
   {
     id: 21,
@@ -217,8 +217,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Just write the final answer without showing any working at all',
     goodResult: 'Teachers see exactly how you think — you get full marks and real understanding!',
     badResult: 'One tiny error loses you all the marks, and you don\'t know what went wrong.',
-    goodImageKw: 'student,detailed,work,grade,happy',
-    badImageKw: 'kid,math,mistake,paper',
+    goodImageKw: 'grade',
+    badImageKw: 'mistake',
   },
   {
     id: 22,
@@ -227,8 +227,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Study while eating chips and drinking sugary soda',
     goodResult: 'Your brain fires on all cylinders — focus is razor sharp, memory is strong!',
     badResult: 'Sugar crash halfway through — you forget everything you just tried to study.',
-    goodImageKw: 'healthy,food,child,focused',
-    badImageKw: 'junk,food,tired,kid',
+    goodImageKw: 'healthy',
+    badImageKw: 'junk',
   },
   {
     id: 23,
@@ -237,8 +237,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Stay up all night cramming and reviewing notes before the test',
     goodResult: 'Wake up sharp, remember everything perfectly, and perform at your absolute best!',
     badResult: 'Too tired to think straight — your brain literally cannot remember anything.',
-    goodImageKw: 'child,sleeping,rested,morning',
-    badImageKw: 'tired,kid,sleepy,exam',
+    goodImageKw: 'sleep',
+    badImageKw: 'exhausted',
   },
   {
     id: 24,
@@ -247,8 +247,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Hide the fact that you\'re struggling and pretend everything is completely fine',
     goodResult: 'Get extra help early, catch up quickly, and feel confident at school again!',
     badResult: 'Fall further behind every single week until catching up feels truly impossible.',
-    goodImageKw: 'parent,child,studying,helping',
-    badImageKw: 'sad,kid,hiding,struggle',
+    goodImageKw: 'helping',
+    badImageKw: 'hiding',
   },
   {
     id: 25,
@@ -257,8 +257,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Only write when school forces you to and never for yourself',
     goodResult: 'Writing becomes easy, natural, and fun — you express anything you feel!',
     badResult: 'Writing always feels scary and hard — even a short paragraph feels painful.',
-    goodImageKw: 'child,writing,journal,happy',
-    badImageKw: 'kid,blank,page,stuck',
+    goodImageKw: 'writing',
+    badImageKw: 'struggle',
   },
   {
     id: 26,
@@ -267,8 +267,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Watch only cartoons and gaming videos every single weekend',
     goodResult: 'Learn cool facts that impress your teachers and make school way more interesting!',
     badResult: 'School feels disconnected from real life because you never explored the world.',
-    goodImageKw: 'child,documentary,amazed,learning',
-    badImageKw: 'kid,bored,school,classroom',
+    goodImageKw: 'discovery',
+    badImageKw: 'television',
   },
   {
     id: 27,
@@ -277,8 +277,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Think grown-up work is too far away and not worth thinking about yet',
     goodResult: 'Build your dream skills years before others even start thinking about it!',
     badResult: 'Arrive at adulthood with no direction and no skills for the life you wanted.',
-    goodImageKw: 'child,dream,career,future',
-    badImageKw: 'confused,teenager,lost,future',
+    goodImageKw: 'dream',
+    badImageKw: 'lost',
   },
   {
     id: 28,
@@ -287,8 +287,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Give up on learning a new language because it seems too hard',
     goodResult: 'Speak to people from other countries, travel freely, and double your opportunities!',
     badResult: 'Be limited to one language in a world where knowing more opens every door.',
-    goodImageKw: 'children,cultures,talking,friends',
-    badImageKw: 'kid,confused,language,barrier',
+    goodImageKw: 'travel',
+    badImageKw: 'isolated',
   },
   {
     id: 29,
@@ -297,8 +297,8 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Wing your class presentation with absolutely zero practice',
     goodResult: 'Speak clearly, feel proud of yourself, and impress your class and teacher!',
     badResult: 'Forget everything, stumble over every word, and feel deeply embarrassed.',
-    goodImageKw: 'child,presentation,confident,class',
-    badImageKw: 'nervous,kid,speaking,class',
+    goodImageKw: 'presentation',
+    badImageKw: 'nervous',
   },
   {
     id: 30,
@@ -307,7 +307,7 @@ export const WHY_STUDY_QUESTIONS: WhyStudyQuestion[] = [
     badAction: 'Throw a failed test in the bin and try to forget about it forever',
     goodResult: 'Your next score is dramatically better because every mistake taught you something!',
     badResult: 'Keep making the exact same mistakes on test after test — never improving.',
-    goodImageKw: 'student,improved,test,happy',
-    badImageKw: 'kid,failed,test,sad',
+    goodImageKw: 'improvement',
+    badImageKw: 'failure',
   },
 ];
