@@ -13,6 +13,99 @@ type Phase = 'intro' | 'playing' | 'done';
 const SESSION_SIZE = 20;
 const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'very hard'];
 
+// ── Image keywords (keyword sets cycled by question ID for variety) ─────────
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  'Money & Buying': [
+    'piggybank,coins,child',
+    'children,saving,money',
+    'kids,shopping,store',
+    'wallet,allowance,child',
+    'bank,saving,coins',
+    'money,jar,kid',
+    'coins,counting,child',
+    'kids,budget,home',
+  ],
+  'Health & Energy': [
+    'children,exercise,sport',
+    'kids,running,outdoor',
+    'healthy,vegetables,food',
+    'children,sleep,rest',
+    'kids,sports,active',
+    'child,eating,healthy',
+    'children,fitness,play',
+    'fruit,vegetables,colorful',
+  ],
+  'Friendships & Respect': [
+    'children,friendship,play',
+    'kids,teamwork,school',
+    'children,kindness,share',
+    'school,friends,laughing',
+    'kids,helping,together',
+    'children,playing,outdoor',
+    'friends,hands,together',
+    'kids,cooperation,team',
+  ],
+  'Skills & Creativity': [
+    'child,drawing,art',
+    'kids,music,instrument',
+    'child,reading,book',
+    'children,science,experiment',
+    'kids,creativity,craft',
+    'child,coding,computer',
+    'children,learning,school',
+    'kids,building,blocks',
+  ],
+  'Your Amazing Future': [
+    'graduation,student,success',
+    'child,studying,desk',
+    'kids,dream,future',
+    'student,learning,book',
+    'education,achievement,school',
+    'children,goals,success',
+    'study,focus,desk',
+    'kids,science,future',
+  ],
+};
+
+function getQuestionImageUrl(q: GrowthQuestion): string {
+  const keywords = CATEGORY_KEYWORDS[q.category] ?? ['learning,kids,school'];
+  const kw = keywords[q.id % keywords.length];
+  return `https://loremflickr.com/600/280/${kw}?lock=${q.id}`;
+}
+
+// ── Per-question image with loading placeholder and error fallback ───────────
+function QuestionImage({ q }: { q: GrowthQuestion }) {
+  const [loaded, setLoaded] = useState(false);
+  const [error, setError] = useState(false);
+  const meta = CATEGORY_META[q.category] ?? { bg: 'bg-gray-50', emoji: '📚', color: 'text-gray-500', border: 'border-gray-200' };
+
+  return (
+    <div className="relative w-full h-44 rounded-xl overflow-hidden mb-4 border-2 border-gray-100 bg-gray-50">
+      {/* Placeholder shown while loading or on error */}
+      <div className={`absolute inset-0 ${meta.bg} flex flex-col items-center justify-center transition-opacity duration-300 ${loaded && !error ? 'opacity-0' : 'opacity-100'}`}>
+        <span className={`text-5xl ${!loaded && !error ? 'animate-pulse' : ''}`}>{q.emoji}</span>
+        {error && <span className="text-xs font-bold text-gray-400 mt-2">{q.category}</span>}
+      </div>
+      {!error && (
+        <img
+          key={q.id}
+          src={getQuestionImageUrl(q)}
+          alt={q.category}
+          className={`w-full h-full object-cover transition-opacity duration-500 ${loaded ? 'opacity-100' : 'opacity-0'}`}
+          onLoad={() => setLoaded(true)}
+          onError={() => { setError(true); setLoaded(false); }}
+        />
+      )}
+      {/* Category label overlay */}
+      <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent px-3 py-2 flex items-center gap-1">
+        <span className="text-sm">{q.emoji}</span>
+        <span className="text-xs font-black text-white tracking-wide">{q.category}</span>
+        <span className="ml-auto text-xs font-bold text-white/70 uppercase">{q.difficulty}</span>
+      </div>
+    </div>
+  );
+}
+
 const CATEGORY_META: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
   'Money & Buying':        { emoji: '💰', color: 'text-yellow-700', bg: 'bg-yellow-50', border: 'border-yellow-400' },
   'Health & Energy':       { emoji: '💪', color: 'text-green-700',  bg: 'bg-green-50',  border: 'border-green-400' },
@@ -313,17 +406,13 @@ export default function GrowPage() {
     <div className="max-w-3xl mx-auto">
       <ProgressBar current={idx} total={sessionQuestions.length} />
 
-      <div className="flex items-center justify-between mb-4">
-        <span className="card-comic-sm px-3 py-1 rounded-full font-black text-sm bg-white border-2">
-          {q.emoji} {q.category}
-        </span>
-        <div className="flex items-center gap-3">
-          <span className="text-xs font-black text-gray-400 uppercase">{q.difficulty}</span>
-          <span className="font-black text-sm text-gray-500">⭐ {score} correct</span>
-        </div>
+      <div className="flex items-center justify-end mb-4">
+        <span className="font-black text-sm text-gray-500">⭐ {score} correct</span>
       </div>
 
       <div className="card-comic bg-white rounded-2xl p-5 mb-4">
+        <QuestionImage q={q} />
+
         <p className="font-black text-sm text-gray-400 text-center mb-1 tracking-widest">ACTIVITY {idx + 1}</p>
         <p className="font-black text-2xl text-center text-[#1a1a1a] mb-2">
           What happens when you make these choices?
