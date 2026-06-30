@@ -8,7 +8,7 @@ type Slot = 'good-result' | 'bad-result' | null;
 type Assignment = { good: Slot; bad: Slot };
 type CardKey = 'good' | 'bad';
 type Zone = 'good-result' | 'bad-result';
-type Phase = 'intro' | 'playing' | 'done';
+type Phase = 'splash' | 'intro' | 'playing' | 'done';
 
 const SESSION_SIZE = 20;
 const DIFFICULTY_ORDER: Difficulty[] = ['easy', 'medium', 'hard', 'very hard'];
@@ -166,7 +166,7 @@ function ProgressBar({ current, total }: { current: number; total: number }) {
 }
 
 export default function GrowPage() {
-  const [phase, setPhase] = useState<Phase>('intro');
+  const [phase, setPhase] = useState<Phase>('splash');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sessionQuestions, setSessionQuestions] = useState<GrowthQuestion[]>([]);
   const [idx, setIdx] = useState(0);
@@ -288,7 +288,71 @@ export default function GrowPage() {
   const actionText = (card: CardKey) => (card === 'good' ? q!.goodAction : q!.badAction);
   const cardIsAssigned = (card: CardKey) => assignment[card] !== null;
 
-  /* ── INTRO ─────────────────────────────────────────────────────────────── */
+  /* ── SPLASH — "Why You Must Study" ────────────────────────────────────── */
+  if (phase === 'splash') {
+    return (
+      <div className="max-w-2xl mx-auto">
+        <div className="card-comic bg-white rounded-3xl p-8 text-center">
+          <div className="text-7xl mb-4">📚</div>
+          <h1 className="font-black text-4xl text-[#1a1a1a] mb-2 tracking-wide">WHY YOU MUST STUDY</h1>
+          <p className="text-gray-500 font-bold mb-8 text-lg">A lesson about your amazing future</p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8 text-left">
+            <div className="card-comic-sm bg-blue-50 border-blue-300 rounded-2xl p-4">
+              <div className="text-3xl mb-2">💡</div>
+              <div className="font-black text-[#1a1a1a] mb-1">Your Choices Matter</div>
+              <div className="text-sm font-semibold text-gray-500">Every small decision today shapes the life you will have tomorrow</div>
+            </div>
+            <div className="card-comic-sm bg-yellow-50 border-yellow-300 rounded-2xl p-4">
+              <div className="text-3xl mb-2">🚀</div>
+              <div className="font-black text-[#1a1a1a] mb-1">1000 Activities</div>
+              <div className="text-sm font-semibold text-gray-500">Money, health, friends, skills, and your future — all in one place</div>
+            </div>
+            <div className="card-comic-sm bg-green-50 border-green-300 rounded-2xl p-4">
+              <div className="text-3xl mb-2">🌱</div>
+              <div className="font-black text-[#1a1a1a] mb-1">Grow Every Day</div>
+              <div className="text-sm font-semibold text-gray-500">Play 20 activities per session and level up from easy to very hard</div>
+            </div>
+          </div>
+
+          <div className="card-comic-sm bg-[#FFF9C4] border-yellow-400 rounded-2xl p-6 mb-8 text-left">
+            <p className="font-black text-lg text-[#1a1a1a] mb-4">🤔 Why does studying matter?</p>
+            <div className="space-y-3 text-sm font-semibold text-gray-700">
+              <div className="flex gap-3 items-start">
+                <span className="text-xl shrink-0">💰</span>
+                <span><strong>Money:</strong> Kids who study earn 3× more as adults and never worry about paying bills</span>
+              </div>
+              <div className="flex gap-3 items-start">
+                <span className="text-xl shrink-0">💪</span>
+                <span><strong>Health:</strong> Education helps you understand your body and make choices that keep you strong for life</span>
+              </div>
+              <div className="flex gap-3 items-start">
+                <span className="text-xl shrink-0">🤝</span>
+                <span><strong>Friends:</strong> Learning makes you interesting, empathetic, and a better teammate and leader</span>
+              </div>
+              <div className="flex gap-3 items-start">
+                <span className="text-xl shrink-0">🎨</span>
+                <span><strong>Skills:</strong> Every great inventor, artist, or athlete practiced and studied more than anyone else</span>
+              </div>
+              <div className="flex gap-3 items-start">
+                <span className="text-xl shrink-0">🚀</span>
+                <span><strong>Future:</strong> The choices you make <em>right now</em> are building the person you will become</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setPhase('intro')}
+            className="card-comic w-full bg-[#4A6CF7] text-white font-black py-5 rounded-2xl text-xl hover:opacity-90 transition"
+          >
+            🌱 Choose a Topic to Start!
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── INTRO — category selection ────────────────────────────────────────── */
   if (phase === 'intro') {
     return (
       <div className="max-w-2xl mx-auto">
@@ -339,6 +403,12 @@ export default function GrowPage() {
               <div className="flex gap-2 items-start"><span>🖱️</span><span><strong>Desktop:</strong> Drag an action card and drop it on the correct outcome zone</span></div>
               <div className="flex gap-2 items-start"><span>👆</span><span><strong>Mobile:</strong> Tap a card to select it, then tap a result zone</span></div>
             </div>
+          </div>
+
+          <div className="mt-4 text-center">
+            <button onClick={() => setPhase('splash')} className="text-xs font-bold text-gray-400 hover:text-gray-600">
+              ← Back to Why You Must Study
+            </button>
           </div>
         </div>
       </div>
